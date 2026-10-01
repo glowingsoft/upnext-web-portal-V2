@@ -1,0 +1,55 @@
+/* Google Places Autocomplete renders its own dropdown outside React (appended to
+   document.body), so it can only be restyled via these global, Google-documented
+   class names — not via MUI's sx/theme system. Values are pulled from MUI's CSS
+   variables (this app's cssVarPrefix is '', so no "mui-" prefix) so it tracks the
+   app's theme, including dark mode, automatically. */
+
+.pac-container {
+  margin-top: 4px;
+  padding: 4px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--palette-background-paper, #fff);
+  box-shadow: var(--customShadows-dropdown, 0 0 2px rgba(145, 158, 171, 0.24), -20px 20px 40px -4px rgba(145, 158, 171, 0.24));
+  font-family: 'Public Sans', sans-serif;
+  z-index: 1400;
+}
+
+.pac-item {
+  border-top: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--palette-text-primary, #1c252e);
+  cursor: pointer;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background-color: var(--palette-action-hover, rgba(145, 158, 171, 0.08));
+}
+
+.pac-icon {
+  margin-top: 3px;
+}
+
+.pac-item-query {
+  font-size: 0.8125rem;
+  color: var(--palette-text-primary, #1c252e);
+  font-weight: 600;
+}
+
+.pac-matched {
+  color: var(--palette-primary-main, #00a76f);
+  font-weight: 700;
+}
+
+.pac-item-query + span {
+  color: var(--palette-text-secondary, #637381);
+}
+
+.pac-logo:after {
+  margin: 6px 4px;
+}
