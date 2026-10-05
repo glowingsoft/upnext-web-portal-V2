@@ -8,6 +8,36 @@ const MAX_TAG_LENGTH = 100;
 
 export const ATTRIBUTION_TYPES = ['organic_search', 'paid_search', 'social', 'email', 'campaign', 'referral', 'direct'];
 
+const SOURCE_LABELS = {
+  google: 'Google',
+  bing: 'Bing',
+  yahoo: 'Yahoo',
+  duckduckgo: 'DuckDuckGo',
+  ecosia: 'Ecosia',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  twitter: 'X (Twitter)',
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  whatsapp: 'WhatsApp',
+  reddit: 'Reddit',
+  pinterest: 'Pinterest',
+  teams: 'Microsoft Teams',
+  gmail: 'Gmail',
+  yahoo_mail: 'Yahoo Mail',
+  outlook: 'Outlook',
+  referral: 'Other website',
+  direct: 'Direct',
+};
+
+export function formatTrafficSource(source) {
+  if (!source || typeof source !== 'string') return '';
+  const key = source.toLowerCase();
+  if (SOURCE_LABELS[key]) return SOURCE_LABELS[key];
+  return key.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 
 const regionalDomain = (brand) => new RegExp(`(^|\\.)${brand}\\.((com|co)\\.[a-z]{2}|[a-z]{2,3})$`);
 
