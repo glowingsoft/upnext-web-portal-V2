@@ -28,7 +28,8 @@ export const paths = {
   services: '/services',
   about: '/about-us',
   stylist: {
-    details: (id) => `/stylist/${id}`,
+
+    details: (slugOrId) => `/${slugOrId}`,
   },
   event: {
     details: (id) => `/event/${id}`,

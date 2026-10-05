@@ -61,19 +61,21 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
                 '& .MuiChip-icon': { ml: 0.5, mr: -0.25 },
               }}
             />
-            <Chip
-              label={service.subCategory}
-              size="small"
-              sx={{
-                height: 22,
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                color: 'text.secondary',
-                bgcolor: (t) => alpha(t.palette.text.primary, 0.07),
-                pointerEvents: 'none',
-                '& .MuiChip-label': { px: 0.75 },
-              }}
-            />
+            {service.subCategory && (
+              <Chip
+                label={service.subCategory}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                  bgcolor: (t) => alpha(t.palette.text.primary, 0.07),
+                  pointerEvents: 'none',
+                  '& .MuiChip-label': { px: 0.75 },
+                }}
+              />
+            )}
           </Box>
         </Box>
 
