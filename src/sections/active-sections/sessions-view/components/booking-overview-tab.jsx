@@ -14,9 +14,121 @@ import { useTranslate } from 'src/locales/use-locales';
 import { varAlpha } from 'src/theme/styles';
 import { capitalizeFirstLetter, fDate, formatStr } from 'src/utils/format-time';
 import { fCurrency } from 'src/utils/format-number';
+import { formatTrafficSource } from 'src/utils/traffic-source';
 
 import { BookingServiceCard } from './booking-service-card';
 import { formatPaymentStatusLabel, getPaymentStatusColor } from '../utils/booking-normalizer';
+
+const SOURCE_ICONS = {
+  google: 'logos:google-icon',
+  bing: 'logos:bing',
+  yahoo: 'logos:yahoo',
+  duckduckgo: 'logos:duckduckgo',
+  facebook: 'logos:facebook',
+  instagram: 'skill-icons:instagram',
+  linkedin: 'logos:linkedin-icon',
+  twitter: 'ri:twitter-x-fill',
+  youtube: 'logos:youtube-icon',
+  tiktok: 'logos:tiktok-icon',
+  whatsapp: 'logos:whatsapp-icon',
+  reddit: 'logos:reddit-icon',
+  pinterest: 'logos:pinterest',
+  teams: 'logos:microsoft-teams',
+  gmail: 'logos:google-gmail',
+  yahoo_mail: 'logos:yahoo',
+  outlook: 'vscode-icons:file-type-outlook',
+  referral: 'solar:global-bold',
+  direct: 'solar:link-round-bold',
+};
+
+function BookingSourcePanel({ source }) {
+  const { t } = useTranslate();
+  const key = source?.toLowerCase();
+  const icon = SOURCE_ICONS[key] || 'solar:routing-2-bold';
+
+  return (
+    <Box
+      sx={{
+        mb: 2.5,
+        p: 2,
+        borderRadius: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 2,
+        bgcolor: (theme) => varAlpha(theme.vars.palette.info.mainChannel, 0.08),
+        border: (theme) => `1px dashed ${varAlpha(theme.vars.palette.info.mainChannel, 0.4)}`,
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            bgcolor: (theme) => varAlpha(theme.vars.palette.info.mainChannel, 0.16),
+            color: 'info.dark',
+          }}
+        >
+          <Iconify icon="solar:routing-2-bold" width={20} />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            {t('bookingSource')}
+          </Typography>
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: 'text.disabled' }}>
+            <Iconify icon="solar:eye-closed-bold" width={13} />
+            <Typography variant="caption">{t('notVisibleToCustomers')}</Typography>
+          </Stack>
+        </Box>
+      </Stack>
+
+      {source ? (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{
+            flexShrink: 0,
+            pl: 0.75,
+            pr: 1.5,
+            py: 0.75,
+            borderRadius: 99,
+            bgcolor: 'background.paper',
+            border: (theme) => `1px solid ${varAlpha(theme.vars.palette.info.mainChannel, 0.24)}`,
+            boxShadow: (theme) => `0 2px 8px ${varAlpha(theme.vars.palette.info.mainChannel, 0.12)}`,
+          }}
+        >
+          <Box
+            sx={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: (theme) => varAlpha(theme.vars.palette.grey['500Channel'], 0.08),
+              color: 'text.primary',
+            }}
+          >
+            <Iconify icon={icon} width={16} />
+          </Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'info.dark' }}>
+            {formatTrafficSource(source)}
+          </Typography>
+        </Stack>
+      ) : (
+        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.disabled', flexShrink: 0 }}>
+          {t('notRecorded')}
+        </Typography>
+      )}
+    </Box>
+  );
+}
 
 function DetailRow({ icon, label, value, color = 'primary' }) {
   const isDefault = color === 'default';
@@ -327,6 +439,8 @@ export const BookingOverviewTab = memo(({ booking, viewerRole = 'customer' }) =>
             )}
           </Box>
         )}
+
+        {viewerRole !== 'customer' && <BookingSourcePanel source={booking.source} />}
 
         <Stack divider={<Divider sx={{ borderStyle: 'dashed', opacity: 0.7 }} />}>
           {booking.bookingId != null && <DetailRow icon="solar:hashtag-square-bold" label={t('bookingReference')} value={booking.bookingId} color="secondary" />}
