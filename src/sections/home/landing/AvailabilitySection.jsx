@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Grid, Pagination, Tab, Tabs, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { Iconify } from 'src/components/iconify';
-import { useDebouncedInput } from 'src/hooks/use-debounced-input';
 import { useLiveLocation } from 'src/hooks/use-live-location';
 import { loadGoogleMapsPlaces } from 'src/lib/google-maps-loader';
 import { useGetPublicCategoriesQuery } from 'src/store/Reducer/categories-api';
 import { useGetPublicBusinessesQuery } from 'src/store/Reducer/businesses-api';
 import { AddressFilterField } from 'src/sections/active-sections/services-view/components/address-filter-field';
+import { getItemId, normalizePackage, normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
+import ServiceCard from 'src/sections/active-sections/services-view/components/service-card-main';
+import PackageCard from 'src/sections/active-sections/services-view/components/package-card';
+import { PortfolioCard } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-card';
+import { PortfolioViewDialog } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-view-dialog';
 import { isRealCoords } from 'src/utils/my-location-storage';
 import { reverseGeocode } from 'src/utils/reverse-geocode';
 
@@ -20,8 +24,26 @@ import FilterPill from './FilterPill';
 import StylistPreviewCard from './StylistPreviewCard';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
+import { useOpenListing } from './use-open-listing';
 
 const PAGE_LIMIT = 12;
+
+// Result types the AI search can return, in display order. `key` matches the response field.
+const RESULT_TABS = [
+  { key: 'businesses', label: 'Stylists', icon: 'mingcute:user-star-line' },
+  { key: 'services', label: 'Services', icon: 'solar:bill-list-bold-duotone' },
+  { key: 'packages', label: 'Packages', icon: 'solar:box-minimalistic-bold' },
+  { key: 'portfolios', label: 'Portfolios', icon: 'solar:gallery-wide-bold-duotone' },
+];
+
+// Per-type totals across all pages. Falls back to the business-level total, then to nothing
+// (callers use the current page's item count instead).
+function getTypeTotal(meta, key) {
+  const total = meta?.counts?.[key] ?? meta?.totals?.[key] ?? meta?.[key]?.total ?? meta?.[`${key}Total`];
+  if (total != null) return total;
+  if (key === 'businesses') return meta?.totalRecords ?? meta?.total;
+  return undefined;
+}
 
 const SORT_OPTIONS = [
   { value: 'best_match', label: 'Best Match' },
@@ -71,7 +93,19 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const [date, setDate] = useState(null);
   const [sortBy, setSortBy] = useState(DEFAULT_SORT);
 
-  const { displayValue: search, debouncedValue: keyword, handleChange: handleSearchChange, reset: resetSearch } = useDebouncedInput('', undefined, 500);
+  // AI search is costly, so the query only runs when the user submits — not on every keystroke.
+  const [search, setSearch] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [activeTab, setActiveTab] = useState(RESULT_TABS[0].key);
+  const handleSearchChange = useCallback((event) => setSearch(event.target.value), []);
+  const submitSearch = useCallback((value) => {
+    setKeyword(value.trim());
+    setActiveTab(RESULT_TABS[0].key);
+  }, []);
+  const resetSearch = useCallback(() => {
+    setSearch('');
+    setKeyword('');
+  }, []);
   const [queryLocation, setQueryLocation] = useState(null);
   const { isLocating: isDetectingLocation, requestLocation } = useLiveLocation();
 
@@ -107,9 +141,8 @@ export default function AvailabilitySection({ onSelectStylist }) {
     [categoriesData]
   );
 
-  const queryArgs = useMemo(
+  const filterArgs = useMemo(
     () => ({
-      page: 1,
       limit: PAGE_LIMIT,
       keyword: keyword || undefined,
       ...(isRealCoords(queryLocation?.lat, queryLocation?.lng) ? { lat: queryLocation.lat, lng: queryLocation.lng } : {}),
@@ -122,21 +155,58 @@ export default function AvailabilitySection({ onSelectStylist }) {
     }),
     [keyword, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]
   );
+  const filterKey = JSON.stringify(filterArgs);
+  const [pageState, setPageState] = useState({ filterKey, page: 1 });
+  const page = pageState.filterKey === filterKey ? pageState.page : 1;
 
-  const { data, isFetching, isLoading } = useGetPublicBusinessesQuery(queryArgs);
+  const { data, isFetching, isLoading } = useGetPublicBusinessesQuery({ ...filterArgs, page });
 
   const businessTypeOptions = useMemo(() => {
     const list = data?.meta?.businessTypeList || ['all', 'solo', 'team'];
     return list.map((value) => ({ value, label: BUSINESS_TYPE_LABELS[value] || value }));
   }, [data]);
 
-  const items = data?.data || [];
-  const totalRecords = data?.meta?.totalRecords ?? items.length;
+  const openListing = useOpenListing();
+  const [viewPortfolio, setViewPortfolio] = useState(null);
+  const resultsRef = useRef(null);
+
+  const results = useMemo(
+    () =>
+      RESULT_TABS.map((tab) => {
+        const pageItems = data?.[tab.key] || [];
+        return { ...tab, items: pageItems, total: getTypeTotal(data?.meta, tab.key) ?? pageItems.length };
+      }),
+    [data]
+  );
+
+  // Only offer tabs for result types that actually came back; stylists are always the fallback.
+  const visibleTabs = results.filter((tab) => tab.total > 0);
+  const currentTab = visibleTabs.find((tab) => tab.key === activeTab) || visibleTabs[0] || results[0];
+  const showTabs = visibleTabs.length > 1;
+  const totalRecords = results.reduce((sum, tab) => sum + tab.total, 0);
+
+  const totalPages = useMemo(() => {
+    const meta = data?.meta;
+    const explicit = meta?.totalPages ?? meta?.pages ?? meta?.pageCount;
+    if (explicit != null) return Math.max(1, explicit);
+
+    const knownTotals = RESULT_TABS.map((tab) => getTypeTotal(meta, tab.key)).filter((total) => total != null);
+    if (knownTotals.length > 0) return Math.max(1, ...knownTotals.map((total) => Math.ceil(total / PAGE_LIMIT)));
+
+    // No totals from the API: offer a next page whenever this one came back full.
+    const isFullPage = RESULT_TABS.some((tab) => (data?.[tab.key]?.length || 0) >= PAGE_LIMIT);
+    return page + (isFullPage ? 1 : 0);
+  }, [data, page]);
+
+  const handlePageChange = (_, nextPage) => {
+    setPageState({ filterKey, page: nextPage });
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const appliedFilterCount = useMemo(() => {
     let count = 0;
 
-    if (search.trim()) count += 1;
+    if (keyword) count += 1;
     if (queryLocation?.address) count += 1;
     if (categoryId !== DEFAULT_CATEGORY.value) count += 1;
     if (businessType !== DEFAULT_BUSINESS_TYPE) count += 1;
@@ -146,7 +216,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     if (sortBy !== DEFAULT_SORT) count += 1;
 
     return count;
-  }, [search, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
+  }, [keyword, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
 
   const resetFilters = () => {
     resetSearch();
@@ -294,6 +364,8 @@ export default function AvailabilitySection({ onSelectStylist }) {
           value={search}
           onChange={handleSearchChange}
           onClear={resetSearch}
+          onSubmit={() => submitSearch(search)}
+          isDirty={search.trim() !== keyword}
           placeholder='Try: "balayage specialist open this weekend"'
         />
 
@@ -306,7 +378,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
               <Box
                 component="button"
                 type="button"
-                onClick={() => handleSearchChange({ target: { value: suggestion } })}
+                onClick={() => setSearch(suggestion)}
                 sx={{
                   border: 'none',
                   background: 'transparent',
@@ -443,6 +515,8 @@ export default function AvailabilitySection({ onSelectStylist }) {
         />
       </Box>
 
+      <Box ref={resultsRef} sx={{ scrollMarginTop: '92px' }} />
+
       {appliedFilterCount > 0 && !isReplacing && (
         <Typography variant="body2" sx={{ mb: 1.5, color: 'text.secondary' }}>
           <Box component="strong" sx={{ color: 'text.primary' }}>
@@ -450,6 +524,46 @@ export default function AvailabilitySection({ onSelectStylist }) {
           </Box>{' '}
           {totalRecords === 1 ? 'result found' : 'results found'}
         </Typography>
+      )}
+
+      {showTabs && !isReplacing && (
+        <Tabs
+          value={currentTab.key}
+          onChange={(_, value) => setActiveTab(value)}
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            mb: 2,
+            minHeight: 40,
+            '& .MuiTabs-indicator': { display: 'none' },
+            '& .MuiTab-root': {
+              minHeight: 40,
+              borderRadius: 99,
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '0.825rem',
+              px: 2,
+              mr: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+            },
+            '& .Mui-selected': {
+              color: `${brand.green[600]} !important`,
+              bgcolor: alpha(brand.green[400], 0.1),
+              borderColor: brand.green[400],
+            },
+          }}
+        >
+          {visibleTabs.map((tab) => (
+            <Tab
+              key={tab.key}
+              value={tab.key}
+              icon={<Iconify icon={tab.icon} width={16} />}
+              iconPosition="start"
+              label={`${tab.label} (${tab.total})`}
+            />
+          ))}
+        </Tabs>
       )}
 
       {isReplacing ? (
@@ -463,10 +577,27 @@ export default function AvailabilitySection({ onSelectStylist }) {
       ) : (
         <>
           <Grid container spacing={2}>
-            {items.length > 0 ? (
-              items.map((business) => (
-                <Grid key={business._id} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
-                  <StylistPreviewCard business={business} onSelectStylist={onSelectStylist} />
+            {currentTab.items.length > 0 ? (
+              currentTab.items.map((item) => (
+                <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
+                  {currentTab.key === 'businesses' && (
+                    <StylistPreviewCard business={item} onSelectStylist={onSelectStylist} />
+                  )}
+                  {currentTab.key === 'services' && (
+                    <ServiceCard svc={normalizeService(item)} onView={() => openListing(normalizeService(item), 'services')} />
+                  )}
+                  {currentTab.key === 'packages' && (
+                    <PackageCard pkg={normalizePackage(item)} onView={() => openListing(normalizePackage(item), 'packages')} />
+                  )}
+                  {currentTab.key === 'portfolios' && (
+                    <Box sx={{ width: '100%' }}>
+                      <PortfolioCard
+                        item={{ ...item, businessName: item.businessName ?? item.business?.businessName }}
+                        canManage={false}
+                        onView={setViewPortfolio}
+                      />
+                    </Box>
+                  )}
                 </Grid>
               ))
             ) : (
@@ -497,10 +628,12 @@ export default function AvailabilitySection({ onSelectStylist }) {
                   </Box>
 
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    No stylists found
+                    {keyword ? 'No results found' : 'No stylists found'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.8, mb: 3 }}>
-                    No stylists match your current filters. Try a different search or category.
+                    {keyword
+                      ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
+                      : 'No stylists match your current filters. Try a different search or category.'}
                   </Typography>
 
                   <Box
@@ -533,6 +666,28 @@ export default function AvailabilitySection({ onSelectStylist }) {
           </Grid>
         </>
       )}
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Pagination
+            page={page}
+            count={totalPages}
+            onChange={handlePageChange}
+            disabled={isReplacing}
+            shape="rounded"
+            sx={{
+              '& .MuiPaginationItem-root': { fontWeight: 700 },
+              '& .MuiPaginationItem-root.Mui-selected': {
+                color: '#fff',
+                bgcolor: brand.green[400],
+                '&:hover': { bgcolor: brand.green[600] },
+              },
+            }}
+          />
+        </Box>
+      )}
+
+      <PortfolioViewDialog item={viewPortfolio} canManage={false} onClose={() => setViewPortfolio(null)} />
     </Box>
   );
 }

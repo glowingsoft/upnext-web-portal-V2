@@ -66,6 +66,19 @@ export const businessesApi = createApi({
           ...(sortBy ? { sortBy } : {}),
         },
       }),
+      // AI search returns several result types side by side; `data` stays the business list for older callers.
+      transformResponse: (response) => {
+        const { businesses, services, packages, portfolios, ...rest } = response?.data || {};
+        return {
+          ...response,
+          data: businesses || [],
+          businesses: businesses || [],
+          services: services || [],
+          packages: packages || [],
+          portfolios: portfolios || [],
+          meta: { ...rest, ...response?.meta },
+        };
+      },
       providesTags: ['business'],
     }),
 

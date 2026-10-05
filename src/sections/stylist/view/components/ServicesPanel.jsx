@@ -76,7 +76,7 @@ export default function ServicesPanel({
             )}
 
             {business.businessType === 'team' && business.teamSize > 0 && (
-              <StatTile icon="mingcute:group-2-fill" label="Team Size" value={`${business.teamSize} team members`} />
+              <StatTile icon="mingcute:group-2-fill" label="Team Size" value={`${business.teamSize} team member${business.teamSize === 1 ? '' : 's'}`} />
             )}
 
             {(business.priceRange?.min > 0 || business.priceRange?.max > 0) && (

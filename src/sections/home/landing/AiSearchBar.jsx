@@ -7,9 +7,18 @@ import { Iconify } from 'src/components/iconify';
 
 import { brand } from './theme';
 
-const AiSearchBar = memo(function AiSearchBar({ value, onChange, onClear, placeholder }) {
+const AiSearchBar = memo(function AiSearchBar({ value, onChange, onClear, onSubmit, isDirty, placeholder }) {
+  const canSubmit = Boolean(value?.trim()) && isDirty;
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (canSubmit) onSubmit?.();
+  };
+
   return (
     <Box
+      component="form"
+      onSubmit={handleSubmit}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -90,6 +99,36 @@ const AiSearchBar = memo(function AiSearchBar({ value, onChange, onClear, placeh
         }}
       >
         <Iconify icon="mingcute:close-line" width={16} />
+      </Box>
+
+      <Box
+        component="button"
+        type="submit"
+        disabled={!canSubmit}
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.75,
+          height: 40,
+          px: 2,
+          flexShrink: 0,
+          border: 'none',
+          borderRadius: 99,
+          cursor: canSubmit ? 'pointer' : 'default',
+          color: '#fff',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          fontFamily: 'inherit',
+          background: `linear-gradient(135deg, ${brand.green[400]}, ${brand.green[600]})`,
+          opacity: canSubmit ? 1 : 0.45,
+          transition: 'opacity 0.15s ease, box-shadow 0.15s ease',
+          '&:hover': canSubmit ? { boxShadow: `0 4px 12px ${alpha(brand.green[600], 0.3)}` } : {},
+        }}
+      >
+        <Iconify icon="mingcute:search-line" width={16} />
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          Search
+        </Box>
       </Box>
     </Box>
   );

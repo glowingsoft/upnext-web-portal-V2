@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 
 import { MainLayout } from 'src/layouts/main';
 import { LandingLayout } from 'src/layouts/landing';
@@ -34,6 +34,12 @@ const Page403 = lazy(() => import('src/pages/error/403'));
 const Page404 = lazy(() => import('src/pages/error/404'));
 // Blank
 const BlankPage = lazy(() => import('src/pages/blank'));
+
+function LegacyStylistRedirect() {
+  const { id } = useParams();
+  const location = useLocation();
+  return <Navigate to={`/${id}`} replace state={location.state} />;
+}
 
 // ----------------------------------------------------------------------
 
@@ -75,13 +81,19 @@ export const mainRoutes = [
           },
         ],
       },
+
       {
-        path: 'stylist/:id',
+        path: ':id',
         element: (
           <LandingLayout>
             <StylistDetailsPage />
           </LandingLayout>
         ),
+      },
+      // Old profile links (/stylist/<slugOrId>) keep working.
+      {
+        path: 'stylist/:id',
+        element: <LegacyStylistRedirect />,
       },
       {
         path: 'event/:id',

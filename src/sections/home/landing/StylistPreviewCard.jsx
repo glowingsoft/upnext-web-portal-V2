@@ -12,12 +12,9 @@ import { brand } from './theme';
 // ----------------------------------------------------------------------
 
 export default function StylistPreviewCard({ business, onSelectStylist }) {
-  const handleSelect = () => onSelectStylist?.({ id: business._id });
+  const handleSelect = () => onSelectStylist?.({ id: business._id, slug: business.nameSlug });
 
   const image = normalizeImageUrl(business.image);
-  // Some uploaded objects 404/403 straight from storage (bad ACL, etc.) — a CSS background-image
-  // would just silently render nothing in that case, so use a real <img> and fall back to the
-  // initials placeholder on a genuine load failure instead.
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(image) && !imageFailed;
   const priceLabel = business.priceRange?.min ? `$${business.priceRange.min}+` : 'Contact for price';

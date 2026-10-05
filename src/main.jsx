@@ -11,6 +11,8 @@ import { CONFIG } from './config-global';
 import { ChunkErrorBoundary } from './components/error-boundary/chunk-error-boundary';
 
 import { persistor, store } from './store/store';
+import { captureTrafficSource } from './utils/traffic-source';
+captureTrafficSource();
 
 
 window.addEventListener('vite:preloadError', (event) => {

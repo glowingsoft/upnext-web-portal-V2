@@ -21,7 +21,7 @@ export function HomeView({ section = 'home' }) {
   };
 
   const handleSelectStylist = (stylist) => {
-    navigate(paths.stylist.details(stylist.id));
+    navigate(paths.stylist.details(stylist.slug || stylist.id), { state: { businessId: stylist.id } });
   };
 
   const pageProgress = useScrollProgress();
