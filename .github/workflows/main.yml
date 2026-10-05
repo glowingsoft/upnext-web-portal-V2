@@ -3,41 +3,160 @@ name: CI/CD for PROD Environment
 on:
   push:
     branches:
-      - main # Deploy on push to the main branch
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  GITLEAKS_VERSION: "8.30.1"
 
 jobs:
-  deploy-fe:
+  secret-scan:
+    name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
+      - name: Checkout code (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Install gitleaks
+        run: |
+          BASE="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          TARBALL="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$TARBALL" "$BASE/$TARBALL"
+          curl -sSfL -o checksums.txt "$BASE/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${TARBALL}$" checksums.txt | sha256sum -c -
+          tar -xzf "$TARBALL" gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan git history for secrets
+        run: |
+          gitleaks git . \
+            --config .gitleaks.toml \
+            --redact \
+            --verbose \
+            --no-banner \
+            --report-format sarif \
+            --report-path gitleaks-report.sarif
+
+      - name: Upload gitleaks report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.sarif
+          retention-days: 7
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "### :white_check_mark: Secret scan passed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### :x: Secret scan failed — deploy blocked" >> "$GITHUB_STEP_SUMMARY"
+            echo "Download the **gitleaks-report** artifact, remove the secret from the code and **rotate it** (it is already in git history)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  dependency-audit:
+    name: Dependency audit (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: npm audit (production dependencies)
+        run: |
+          npm audit --omit=dev --json > audit.json || true
+          node -e '
+            const a = require("./audit.json");
+            const v = (a.metadata && a.metadata.vulnerabilities) || {};
+            const rows = ["critical", "high", "moderate", "low"].map((k) => `| ${k} | ${v[k] || 0} |`).join("\n");
+            console.log(`### :shield: Dependency audit\n\n| Severity | Count |\n|---|---|\n${rows}\n\nReport only — does not block the deploy.`);
+          ' >> "$GITHUB_STEP_SUMMARY"
+          npm audit --omit=dev --audit-level=critical
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: Define environment variables from REACT_ENV_FILE_PROD
         run: |
           rm -f .env
           echo "${{ secrets.REACT_ENV_FILE_PROD }}" > .env
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Install dependencies
-        run: npm install --force
+        run: npm install --force --no-audit --no-fund
 
       - name: Build React app
         run: CI=false npm run build
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.html || { echo "dist/index.html missing"; exit 1; }
+          {
+            echo "### :package: Build passed"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|---|---|"
+            echo "| Total size | $(du -sh dist | cut -f1) |"
+            echo "| Files | $(find dist -type f | wc -l) |"
+            echo "| JS bundles | $(find dist -name '*.js' | wc -l) |"
+            echo "| Largest JS | $(find dist -name '*.js' -printf '%s %f\n' | sort -nr | head -1 | awk '{printf "%s (%.0f KB)", $2, $1/1024}') |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove env file
+        if: always()
+        run: rm -f .env
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-prod
+          path: dist
+          retention-days: 3
+
+  deploy-fe:
+    name: Deploy to PROD
+    needs: [secret-scan, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-prod
+          path: dist
 
       - name: Create PEM file from Secret
         run: |
@@ -130,6 +249,14 @@ jobs:
             cd "$BACKUP_DIR"
             sudo ls -1tr | head -n -3 | xargs -d '\n' -r sudo rm -rf
           EOF
-      - name: Clean up local ZIP file
+
+      - name: Deployment summary
         run: |
-         [ -f "$ZIP_NAME" ] && rm "$ZIP_NAME"
+          echo "### :rocket: Deployed to PROD" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit \`${GITHUB_SHA::7}\` → \`/var/www/html-prod\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up key and ZIP file
+        if: always()
+        run: |
+          rm -f ~/.ssh/ec2_key.pem
+          [ -n "${ZIP_NAME:-}" ] && rm -f "$ZIP_NAME" || true

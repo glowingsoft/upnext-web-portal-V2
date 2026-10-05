@@ -1,0 +1,9 @@
+title = "upnext-web-portal gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Firebase web config keys are public by design; restrict them in Google Cloud Console instead"
+targetRules = ["gcp-api-key", "generic-api-key"]
+paths = ['''(^|[/\\])public[/\\]firebase-messaging-sw\.js$''']
