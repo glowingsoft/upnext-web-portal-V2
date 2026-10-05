@@ -83,7 +83,6 @@ const FILTER_ICONS = {
   availability: 'mingcute:time-line',
 };
 
-const SEARCH_SUGGESTIONS = ['Balayage near me', 'Open this weekend', 'Top rated stylists', 'Under $50'];
 
 export default function AvailabilitySection({ onSelectStylist }) {
   const [categoryId, setCategoryId] = useState(DEFAULT_CATEGORY.value);
@@ -368,41 +367,6 @@ export default function AvailabilitySection({ onSelectStylist }) {
           isDirty={search.trim() !== keyword}
           placeholder='Try: "balayage specialist open this weekend"'
         />
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mt: 1.75, px: 0.5 }}>
-          <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
-            Popular:
-          </Typography>
-          {SEARCH_SUGGESTIONS.map((suggestion, index) => (
-            <Box key={suggestion} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                component="button"
-                type="button"
-                onClick={() => setSearch(suggestion)}
-                sx={{
-                  border: 'none',
-                  background: 'transparent',
-                  p: 0,
-                  fontFamily: 'inherit',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: brand.green[600],
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  textDecorationColor: 'transparent',
-                  textUnderlineOffset: 3,
-                  transition: 'text-decoration-color 0.15s ease, color 0.15s ease',
-                  '&:hover': { textDecorationColor: brand.green[400], color: brand.green[800] },
-                }}
-              >
-                {suggestion}
-              </Box>
-              {index < SEARCH_SUGGESTIONS.length - 1 && (
-                <Box component="span" sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: alpha(brand.green[400], 0.5) }} />
-              )}
-            </Box>
-          ))}
-        </Box>
       </Box>
 
       <Typography

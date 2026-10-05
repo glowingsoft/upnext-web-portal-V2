@@ -19,6 +19,7 @@ export const bookingsApi = createApi({
     createBooking: builder.mutation({
       query: ({ scope, targetId, date, slot, paymentMethod, promotionId }) => {
         const source = getTrafficPayload()?.source;
+        console.log('[traffic-source] TEMP booking source:', source);
         return {
           url: API_ROUTES.BOOKINGS,
           method: 'POST',
