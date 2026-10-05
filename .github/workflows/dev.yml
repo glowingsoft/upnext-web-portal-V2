@@ -1,9 +1,6 @@
 name: CI/CD for DEV Environment
 
 on:
-  push:
-    branches:
-      - dev
   workflow_dispatch:
 
 permissions:
