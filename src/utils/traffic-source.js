@@ -12,6 +12,9 @@ export const ATTRIBUTION_TYPES = ['organic_search', 'paid_search', 'social', 'em
 const regionalDomain = (brand) => new RegExp(`(^|\\.)${brand}\\.((com|co)\\.[a-z]{2}|[a-z]{2,3})$`);
 
 const SOURCE_RULES = [
+  { source: 'gmail', attributionType: 'email', domains: ['mail.google.com'] },
+  { source: 'yahoo_mail', attributionType: 'email', domains: ['mail.yahoo.com'] },
+  { source: 'outlook', attributionType: 'email', domains: ['outlook.live.com', 'outlook.office.com', 'outlook.office365.com'] },
   { source: 'google', attributionType: 'organic_search', pattern: regionalDomain('google') },
   { source: 'bing', attributionType: 'organic_search', domains: ['bing.com'] },
   { source: 'yahoo', attributionType: 'organic_search', pattern: regionalDomain('yahoo') },
@@ -26,7 +29,26 @@ const SOURCE_RULES = [
   { source: 'whatsapp', attributionType: 'social', domains: ['whatsapp.com', 'wa.me'] },
   { source: 'reddit', attributionType: 'social', domains: ['reddit.com', 'redd.it'] },
   { source: 'pinterest', attributionType: 'social', domains: ['pin.it'], pattern: regionalDomain('pinterest') },
+  { source: 'teams', attributionType: 'social', domains: ['teams.microsoft.com', 'teams.live.com', 'teams.cloud.microsoft'] },
 ];
+
+const ANDROID_APP_SOURCES = {
+  'com.facebook.katana': { source: 'facebook', attributionType: 'social' },
+  'com.facebook.lite': { source: 'facebook', attributionType: 'social' },
+  'com.facebook.orca': { source: 'facebook', attributionType: 'social' },
+  'com.instagram.android': { source: 'instagram', attributionType: 'social' },
+  'com.linkedin.android': { source: 'linkedin', attributionType: 'social' },
+  'com.twitter.android': { source: 'twitter', attributionType: 'social' },
+  'com.zhiliaoapp.musically': { source: 'tiktok', attributionType: 'social' },
+  'com.google.android.youtube': { source: 'youtube', attributionType: 'social' },
+  'com.reddit.frontpage': { source: 'reddit', attributionType: 'social' },
+  'com.pinterest': { source: 'pinterest', attributionType: 'social' },
+  'com.whatsapp': { source: 'whatsapp', attributionType: 'social' },
+  'com.microsoft.teams': { source: 'teams', attributionType: 'social' },
+  'com.google.android.googlequicksearchbox': { source: 'google', attributionType: 'organic_search' },
+  'com.google.android.gm': { source: 'gmail', attributionType: 'email' },
+  'com.microsoft.office.outlook': { source: 'outlook', attributionType: 'email' },
+};
 
 // Hops that sit inside our own flows (payment checkout, OAuth sign-in) rather than bringing a
 // visitor in. Returning from them must not be recorded as a new source.
@@ -108,6 +130,10 @@ function isInternalHost(host, siteHostname) {
  */
 export function classifyReferrer(referrer, siteHostname) {
   const url = parseUrl(referrer);
+  if (url?.protocol === 'android-app:') {
+    const app = ANDROID_APP_SOURCES[url.hostname.toLowerCase()];
+    return app ? { kind: 'external', ...app } : { kind: 'external', source: 'referral', attributionType: 'referral' };
+  }
   if (!url || !/^https?:$/.test(url.protocol)) return { kind: 'none' };
 
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
@@ -153,7 +179,9 @@ function sanitizeLandingUrl(url) {
 /** Referrer reduced to origin + path (no query or hash). */
 function sanitizeReferrer(referrer) {
   const url = parseUrl(referrer);
-  return url ? truncate(`${url.origin}${url.pathname}`, MAX_URL_LENGTH) : null;
+  if (!url) return null;
+  const origin = url.origin === 'null' ? `${url.protocol}//${url.hostname}` : url.origin;
+  return truncate(`${origin}${url.pathname}`, MAX_URL_LENGTH);
 }
 
 export function getTrafficSource(env = defaultEnv()) {
@@ -180,6 +208,9 @@ export function getTrafficSource(env = defaultEnv()) {
     attributionType = 'paid_search';
   } else if (referrerInfo.kind === 'external') {
     ({ source, attributionType } = referrerInfo);
+  } else if (referrerInfo.kind !== 'internal' && params.has('fbclid')) {
+    source = 'facebook';
+    attributionType = 'social';
   } else {
     source = 'direct';
     attributionType = 'direct';
