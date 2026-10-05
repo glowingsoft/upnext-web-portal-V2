@@ -1,6 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { API_ROUTES } from '../apiRoutes';
 import { createCustomFetchBaseQuery } from '../baseQuery';
+import { getTrafficPayload } from 'src/utils/traffic-source';
 
 export const bookingsApi = createApi({
   reducerPath: 'bookingsApi',
@@ -16,18 +17,22 @@ export const bookingsApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'slots', id: `${arg?.scope}-${arg?.targetId}-${arg?.date}` }],
     }),
     createBooking: builder.mutation({
-      query: ({ scope, targetId, date, slot, paymentMethod, promotionId }) => ({
-        url: API_ROUTES.BOOKINGS,
-        method: 'POST',
-        body: {
-          scope,
-          targetId,
-          date,
-          slot,
-          ...(paymentMethod ? { stripePaymentMethodId: paymentMethod } : {}),
-          ...(promotionId ? { promotionId } : {}),
-        },
-      }),
+      query: ({ scope, targetId, date, slot, paymentMethod, promotionId }) => {
+        const source = getTrafficPayload()?.source;
+        return {
+          url: API_ROUTES.BOOKINGS,
+          method: 'POST',
+          body: {
+            scope,
+            targetId,
+            date,
+            slot,
+            ...(paymentMethod ? { stripePaymentMethodId: paymentMethod } : {}),
+            ...(promotionId ? { promotionId } : {}),
+            ...(source ? { source } : {}),
+          },
+        };
+      },
       invalidatesTags: ['slots', 'bookings'],
     }),
     acceptBooking: builder.mutation({

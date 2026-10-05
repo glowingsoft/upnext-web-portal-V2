@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { Box, Grid } from '@mui/material';
 
@@ -36,13 +36,22 @@ function formatLeadTime(lead) {
 // ----------------------------------------------------------------------
 
 export function StylistProfileView() {
-  const { id } = useParams();
+  const { id: slugOrId } = useParams();
+  const location = useLocation();
+  const businessId = location.state?.businessId || slugOrId;
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.user);
 
-  const { data, isLoading, isFetching } = useGetPublicBusinessByIdQuery(id, { skip: !id });
+  const { data, isLoading, isFetching } = useGetPublicBusinessByIdQuery(businessId, { skip: !businessId });
   const business = data?.data;
   const loading = isLoading || isFetching;
+
+  // Show the readable slug in the address bar when the page was opened by ID.
+  useEffect(() => {
+    if (business?.nameSlug && business._id === businessId && slugOrId !== business.nameSlug) {
+      navigate(paths.stylist.details(business.nameSlug), { replace: true, state: { businessId: business._id } });
+    }
+  }, [business, businessId, slugOrId, navigate]);
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedServiceId, setExpandedServiceId] = useState(null);

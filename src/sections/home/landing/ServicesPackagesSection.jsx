@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,8 +8,6 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
-
-import { paths } from 'src/routes/paths';
 
 import { Iconify } from 'src/components/iconify';
 import { useDebouncedInput } from 'src/hooks/use-debounced-input';
@@ -24,6 +20,7 @@ import CardSkeleton from './CardSkeleton';
 import SearchBox from './SearchBox';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
+import { useOpenListing } from './use-open-listing';
 
 const LIMIT = 12;
 
@@ -61,11 +58,7 @@ const TABS = [
 ];
 
 export default function ServicesPackagesSection() {
-  const navigate = useNavigate();
-  const { user } = useSelector((state) => state.user);
-  const isLoggedIn = Boolean(user);
-  const userType = user?.accountState?.userType;
-  const isCustomer = userType === 'customer' || userType === 'user';
+  const openListing = useOpenListing();
   const [activeTab, setActiveTab] = useState('services');
   const { displayValue: search, debouncedValue: keyword, handleChange: handleSearchChange, reset: resetSearch } = useDebouncedInput('', undefined, 500);
 
@@ -75,27 +68,7 @@ export default function ServicesPackagesSection() {
   const active = activeTab === 'services' ? services : packages;
   const activeTabMeta = TABS.find((tab) => tab.value === activeTab);
 
-  const handleView = (item) => {
-    if (!isLoggedIn) {
-      navigate(paths.auth.jwt.signIn);
-      return;
-    }
-
-    const itemId = getItemId(item);
-    if (!itemId) return;
-
-    if (!isCustomer) {
-      if (item.providerId) navigate(paths.stylist.details(item.providerId));
-      return;
-    }
-
-    if (activeTab === 'packages') {
-      navigate(paths.dashboard.packageDetails(itemId));
-      return;
-    }
-
-    navigate(paths.dashboard.serviceDetails(itemId), { state: { service: item } });
-  };
+  const handleView = (item) => openListing(item, activeTab);
 
   return (
     <Box id="services" sx={{ mt: 4, mb: 3, px: { xs: 2, md: 3 }, scrollMarginTop: '92px' }}>
