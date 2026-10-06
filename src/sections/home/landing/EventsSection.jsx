@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Box, Chip, Grid, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
 import { paths } from 'src/routes/paths';
@@ -21,6 +21,7 @@ import SearchBox from './SearchBox';
 import CardSkeleton from './CardSkeleton';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
+import EventPreviewCard from './EventPreviewCard';
 
 const EVENTS_PAGE_SIZE = 12;
 
@@ -34,193 +35,9 @@ const CATEGORY_OPTIONS = [
 ];
 const DEFAULT_CATEGORY = '';
 
-const SEGMENT_COLORS = {
-  Music: { bg: alpha('#8B5CF6', 0.1), color: '#7C3AED', border: alpha('#8B5CF6', 0.25) },
-  Sports: { bg: alpha('#F59E0B', 0.1), color: '#D97706', border: alpha('#F59E0B', 0.25) },
-  Arts: { bg: alpha('#EC4899', 0.1), color: '#DB2777', border: alpha('#EC4899', 0.25) },
-  default: { bg: alpha(brand.green[400], 0.1), color: brand.green[600], border: alpha(brand.green[400], 0.25) },
-};
-
-function formatDate(dateStr, timeStr) {
-  if (!dateStr) return '';
-  const date = new Date(timeStr ? `${dateStr}T${timeStr}` : dateStr);
-  if (Number.isNaN(date.getTime())) return '';
-  const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  if (!timeStr) return datePart;
-  const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `${datePart} · ${timePart}`;
-}
-
 function EventCard({ event }) {
   const navigate = useNavigate();
-  const segment = event.categories?.segment;
-  const genre = event.categories?.genre;
-  const colors = SEGMENT_COLORS[segment] || SEGMENT_COLORS.default;
-  const location = [event.venue?.city, event.venue?.stateCode || event.venue?.state].filter(Boolean).join(', ');
-
-  const handleSelect = () => navigate(paths.event.details(event.id));
-
-  return (
-    <SurfaceCard
-      onClick={handleSelect}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleSelect();
-        }
-      }}
-      sx={{
-        overflow: 'hidden',
-        cursor: 'pointer',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: `0 10px 26px ${alpha(brand.green[400], 0.14)}`,
-        },
-      }}
-    >
-      {/* Image */}
-      <Box
-        sx={{
-          height: 190,
-          position: 'relative',
-          backgroundImage: event.image ? `url(${event.image})` : undefined,
-          bgcolor: event.image ? undefined : alpha(brand.green[400], 0.12),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        {/* Dark gradient for readability */}
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)',
-          }}
-        />
-        {/* Segment chip */}
-        {segment && (
-          <Chip
-            label={segment}
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              height: 24,
-              bgcolor: alpha('#0B1220', 0.72),
-              color: '#F8FAFC',
-              border: `1px solid ${alpha(colors.color, 0.58)}`,
-              backdropFilter: 'blur(8px) saturate(130%)',
-              WebkitBackdropFilter: 'blur(8px) saturate(130%)',
-              boxShadow: `0 6px 16px ${alpha('#020617', 0.32)}`,
-              fontWeight: 800,
-              fontSize: '0.68rem',
-              letterSpacing: 0.2,
-              '& .MuiChip-label': {
-                px: 1,
-                textShadow: '0 1px 2px rgba(2,6,23,0.65)',
-              },
-            }}
-          />
-        )}
-        {/* Genre bottom-left */}
-        {genre && (
-          <Typography
-            sx={{
-              position: 'absolute',
-              bottom: 8,
-              left: 10,
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.85)',
-            }}
-          >
-            {genre}
-          </Typography>
-        )}
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography
-          variant="subtitle1"
-          sx={{
-            fontWeight: 700,
-            mb: 0.75,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: 1.35,
-          }}
-        >
-          {event.title}
-        </Typography>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-          <Iconify icon="mingcute:calendar-line" width={13} sx={{ color: brand.green[600], flexShrink: 0 }} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-            {formatDate(event.date?.localDate, event.date?.localTime)}
-          </Typography>
-        </Box>
-
-        {event.venue?.name && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0 }}>
-            <Iconify icon="mingcute:location-line" width={13} sx={{ color: brand.green[600], flexShrink: 0 }} />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: '0.75rem', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-            >
-              {event.venue.name}{location ? `, ${location}` : ''}
-            </Typography>
-          </Box>
-        )}
-
-        {event.distance != null && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
-            <Iconify icon="mingcute:route-line" width={13} sx={{ color: brand.green[600], flexShrink: 0 }} />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              {`${Number(event.distance).toFixed(1)} ${event.units || 'miles'} away`}
-            </Typography>
-          </Box>
-        )}
-
-        <Box sx={{ flex: 1 }} />
-
-        {event.ticketUrl && (
-          <Box
-            component="a"
-            href={event.ticketUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            sx={{
-              mt: 1.75,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.5,
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: brand.green[600],
-              textDecoration: 'none',
-              '&:hover': { color: brand.green[800] },
-            }}
-          >
-            Get Tickets
-            <Iconify icon="mingcute:arrow-right-line" width={14} />
-          </Box>
-        )}
-      </Box>
-    </SurfaceCard>
-  );
+  return <EventPreviewCard event={event} onSelect={() => navigate(paths.event.details(event.id))} />;
 }
 
 export default function EventsSection() {
@@ -270,12 +87,9 @@ export default function EventsSection() {
   };
 
   return (
-    <Box id="events" sx={{ mt: 4, mb: 3, px: { xs: 2, md: 3 }, scrollMarginTop: '92px' }}>
+    <Box id="events" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 5, md: 8 }, scrollMarginTop: '92px' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: brand.green[600] }}>
-          Events
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { xs: 3, md: 4 }, flexWrap: 'wrap', gap: 1.5 }}>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FilterPill

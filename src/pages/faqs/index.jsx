@@ -1,12 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
 
 import { FaqsView } from 'src/sections/faqs/view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Faqs - ${CONFIG.site.name}` };
+const metadata = { title: `Faqs | UpNext` };
 
 export default function Page() {
   return (

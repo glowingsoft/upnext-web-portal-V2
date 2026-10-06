@@ -11,16 +11,16 @@ import { useGetPublicCategoriesQuery } from 'src/store/Reducer/categories-api';
 import { useGetPublicBusinessesQuery } from 'src/store/Reducer/businesses-api';
 import { AddressFilterField } from 'src/sections/active-sections/services-view/components/address-filter-field';
 import { getItemId, normalizePackage, normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
-import ServiceCard from 'src/sections/active-sections/services-view/components/service-card-main';
-import PackageCard from 'src/sections/active-sections/services-view/components/package-card';
-import { PortfolioCard } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-card';
 import { PortfolioViewDialog } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-view-dialog';
 import { isRealCoords } from 'src/utils/my-location-storage';
 import { reverseGeocode } from 'src/utils/reverse-geocode';
 
 import AiSearchBar from './AiSearchBar';
+import SectionHeader from './SectionHeader';
 import CardSkeleton from './CardSkeleton';
 import FilterPill from './FilterPill';
+import ListingPreviewCard from './ListingPreviewCard';
+import PortfolioPreviewCard from './PortfolioPreviewCard';
 import StylistPreviewCard from './StylistPreviewCard';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
@@ -295,12 +295,42 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const isReplacing = isLoading || isFetching;
 
   return (
-    <Box id="available-now" sx={{ mb: 3, px: { xs: 2, md: 3 }, pt: { xs: 2, md: 3 } }}>
-      {/* Section header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+    <Box id="available-now" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 7, md: 11 }, scrollMarginTop: '72px' }}>
+      <SectionHeader
+        eyebrow="Book Today"
+        title="Available Now"
+        subtitle="Discover talented stylists near you who are ready to take your booking."
+      />
+
+      <Box
+        sx={{
+          position: 'relative',
+          maxWidth: 960,
+          mx: 'auto',
+          borderRadius: 5,
+          p: { xs: 2, sm: 3 },
+          mb: { xs: 4, md: 6 },
+          background: `linear-gradient(135deg, ${alpha(brand.green[100], 0.7)} 0%, ${alpha(brand.green[50], 0.95)} 100%)`,
+          border: `1px solid ${alpha(brand.green[400], 0.16)}`,
+          boxShadow: `0 24px 48px -32px ${alpha(brand.green[800], 0.35)}`,
+        }}
+      >
+        <AiSearchBar
+          value={search}
+          onChange={handleSearchChange}
+          onClear={resetSearch}
+          onSubmit={() => submitSearch(search)}
+          isDirty={search.trim() !== keyword}
+          placeholder='Try: "balayage specialist open this weekend"'
+        />
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, minHeight: 32 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: brand.green[600] }}>
-            Available Now
+          <Typography
+            sx={{ ml: 0.5, color: 'text.disabled', letterSpacing: '0.2em', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+          >
+            Refine Results
           </Typography>
           <Box
             sx={{
@@ -348,33 +378,6 @@ export default function AvailabilitySection({ onSelectStylist }) {
           Clear filters
         </Box>
       </Box>
-      
-      <Box
-        sx={{
-          position: 'relative',
-          borderRadius: 4,
-          p: { xs: 2, sm: 3 },
-          mb: 3,
-          background: `linear-gradient(135deg, ${alpha(brand.green[100], 0.7)} 0%, ${alpha(brand.green[50], 0.95)} 100%)`,
-          border: `1px solid ${alpha(brand.green[400], 0.16)}`,
-        }}
-      >
-        <AiSearchBar
-          value={search}
-          onChange={handleSearchChange}
-          onClear={resetSearch}
-          onSubmit={() => submitSearch(search)}
-          isDirty={search.trim() !== keyword}
-          placeholder='Try: "balayage specialist open this weekend"'
-        />
-      </Box>
-
-      <Typography
-        variant="overline"
-        sx={{ display: 'block', mb: 1, ml: 0.5, color: 'text.disabled', letterSpacing: 1, fontSize: '0.7rem' }}
-      >
-        Refine Results
-      </Typography>
 
       {/* Filter bar */}
       <Box
@@ -382,8 +385,8 @@ export default function AvailabilitySection({ onSelectStylist }) {
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          mb: 2.5,
-          p: 1,
+          mb: { xs: 3.5, md: 5 },
+          p: 1.25,
           borderRadius: 3,
           bgcolor: (theme) => alpha(theme.palette.background.paper, 0.9),
           border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -531,7 +534,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
       )}
 
       {isReplacing ? (
-        <Grid container spacing={2}>
+        <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
           {Array.from({ length: 8 }).map((_, index) => (
             <Grid key={index} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
               <CardSkeleton />
@@ -540,7 +543,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
         </Grid>
       ) : (
         <>
-          <Grid container spacing={2}>
+          <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
             {currentTab.items.length > 0 ? (
               currentTab.items.map((item) => (
                 <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
@@ -548,20 +551,20 @@ export default function AvailabilitySection({ onSelectStylist }) {
                     <StylistPreviewCard business={item} onSelectStylist={onSelectStylist} />
                   )}
                   {currentTab.key === 'services' && (
-                    <ServiceCard svc={normalizeService(item)} onView={() => openListing(normalizeService(item), 'services')} />
+                    <ListingPreviewCard
+                      kind="service"
+                      item={normalizeService(item)}
+                      onView={() => openListing(normalizeService(item), 'services')}
+                    />
                   )}
                   {currentTab.key === 'packages' && (
-                    <PackageCard pkg={normalizePackage(item)} onView={() => openListing(normalizePackage(item), 'packages')} />
+                    <ListingPreviewCard
+                      kind="package"
+                      item={normalizePackage(item)}
+                      onView={() => openListing(normalizePackage(item), 'packages')}
+                    />
                   )}
-                  {currentTab.key === 'portfolios' && (
-                    <Box sx={{ width: '100%' }}>
-                      <PortfolioCard
-                        item={{ ...item, businessName: item.businessName ?? item.business?.businessName }}
-                        canManage={false}
-                        onView={setViewPortfolio}
-                      />
-                    </Box>
-                  )}
+                  {currentTab.key === 'portfolios' && <PortfolioPreviewCard item={item} onView={setViewPortfolio} />}
                 </Grid>
               ))
             ) : (

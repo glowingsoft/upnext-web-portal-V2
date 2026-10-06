@@ -6,6 +6,7 @@ const SECTION_META = {
     howItWorks: { title: 'How It Works' },
     reviews: { title: 'Reviews' },
     events: { title: 'Events' },
+    services: { title: 'Services' },
 };
 
 export default function LandingSectionPage({ section }) {

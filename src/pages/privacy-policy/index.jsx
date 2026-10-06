@@ -1,10 +1,9 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
 
 import PrivacyPolicyView from 'src/sections/privacy-policy/view/privacy-policy-view';
 
-const metadata = { title: `Privacy Policy - ${CONFIG.site.name}` };
+const metadata = { title: `Privacy Policy | UpNext` };
 
 export default function Page() {
   return (

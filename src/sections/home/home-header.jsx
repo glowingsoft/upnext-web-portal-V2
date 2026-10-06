@@ -175,6 +175,8 @@ export function HomeHeader({ showHowItWorks = true }) {
                     height: 34,
                     fontSize: 14,
                     fontWeight: 700,
+                    color: theme.vars.palette.primary.contrastText,
+                    bgcolor: theme.vars.palette.primary.main,
                     border: `2px solid ${theme.vars.palette.background.paper}`,
                     boxShadow: `0 0 0 1.5px ${theme.vars.palette.primary.main}`,
                   })}

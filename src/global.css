@@ -34,6 +34,13 @@
 @import '@fontsource/nunito-sans/700.css';
 @import '@fontsource/nunito-sans/800.css';
 
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+@import '@fontsource/playfair-display/800.css';
+@import '@fontsource/playfair-display/900.css';
+@import '@fontsource/playfair-display/700-italic.css';
+@import '@fontsource/playfair-display/800-italic.css';
+
 /** **************************************
 * Plugins
 *************************************** */
@@ -87,4 +94,31 @@ input[type='number']::-webkit-outer-spin-button {
 input[type='number']::-webkit-inner-spin-button {
   margin: 0;
   -webkit-appearance: none;
+}
+
+/** **************************************
+* Fonts: public pages (landing, stylist profile, marketing)
+*************************************** */
+body.public-fonts,
+body.public-fonts [class*='Mui'] {
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+}
+body.public-fonts .MuiTypography-h1,
+body.public-fonts .MuiTypography-h2,
+body.public-fonts .MuiTypography-h3,
+body.public-fonts .MuiTypography-h4,
+body.public-fonts .MuiTypography-h1 [class*='Mui'],
+body.public-fonts .MuiTypography-h2 [class*='Mui'],
+body.public-fonts .MuiTypography-h3 [class*='Mui'],
+body.public-fonts .MuiTypography-h4 [class*='Mui'] {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.01em;
 }

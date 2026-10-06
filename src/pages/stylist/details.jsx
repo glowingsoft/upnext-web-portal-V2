@@ -1,12 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
 
 import { StylistProfileView } from 'src/sections/stylist/view/stylist-profile-view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Stylist Profile - ${CONFIG.site.name}` };
+const metadata = { title: `Stylist Profile | UpNext` };
 
 export default function Page() {
   return (

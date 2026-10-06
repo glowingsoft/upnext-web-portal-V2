@@ -43,7 +43,7 @@ const TABS = [
   { value: 'promotions', label: 'promotions', icon: 'duo-icons:discount' },
 ];
 
-const LIMIT = 9;
+const LIMIT = 12;
 
 function normalizeServiceCard(item) {
   const durationMins = getItemDurationMins(item);
@@ -131,7 +131,7 @@ function ServicesContent({ isAdmin, router, isAdminRoute, isPublicView, business
 
   return (
     <Stack spacing={2}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
         {isFetching
           ? Array.from({ length: LIMIT }).map((_, i) => <ServiceCardSkeleton key={i} />)
           : services.length
@@ -191,7 +191,7 @@ function PackagesContent({ isAdmin, router, isAdminRoute, isPublicView, business
 
   return (
     <Stack spacing={2}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
         {isFetching
           ? Array.from({ length: LIMIT }).map((_, i) => <ServiceCardSkeleton key={i} />)
           : packages.length
@@ -269,7 +269,7 @@ function PromotionsContent({ isAdmin, router, isAdminRoute, isPublicView, busine
 
   return (
     <Stack spacing={2}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 2 }}>
         {isFetching
           ? Array.from({ length: LIMIT }).map((_, i) => <ServiceCardSkeleton key={i} />)
           : promotions.length

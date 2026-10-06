@@ -16,10 +16,13 @@ import { setUser } from 'src/store/slices/userSlice';
 
 import { JwtOtpCodeFields } from './jwt-otp-code-fields';
 import { OtpVerifySchema } from './otp-verify-schema';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 // ----------------------------------------------------------------------
 
 export function JwtVerifyAccountView() {
+  usePublicFonts();
   const router = useRouter();
   const dispatch = useDispatch();
   const email = sessionStorage.getItem('verify_email') || '';
@@ -84,8 +87,10 @@ export function JwtVerifyAccountView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 5 }}>
-        <Typography variant="h5">Verify your account</Typography>
+      <Stack spacing={1.5} sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Verify your account
+        </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Enter the One-Time Password (OTP) sent to{email ? ` ${email}` : ' your email'} to continue setting up your account.
         </Typography>
@@ -113,7 +118,7 @@ export function JwtVerifyAccountView() {
       )}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={authFieldSx}>
           <Box>
             <JwtOtpCodeFields control={control} />
 

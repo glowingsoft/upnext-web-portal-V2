@@ -136,6 +136,12 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
   );
   const { data: reviewStatsData } = isAdminRoute ? adminStatsResult : isPublicView ? publicStatsResult : genericStatsResult;
   const reviewStats = normalizeReviewStats(reviewStatsData?.data?.stats, []);
+  const countedReviews = reviewStats.ratingCounts.reduce((sum, item) => sum + item.count, 0);
+  const countedAverage = countedReviews
+    ? reviewStats.ratingCounts.reduce((sum, item) => sum + item.star * item.count, 0) / countedReviews
+    : 0;
+  const reviewTotal = reviewStats.totalReviews || countedReviews || Number(provider.reviewCount) || 0;
+  const ratingValue = reviewStats.averageRating || countedAverage || Number(provider.rating) || 0;
 
   const handleViewService = (service) => {
     const serviceId = service?._id || service?.id;
@@ -366,15 +372,15 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             <Typography variant="subtitle1" fontWeight={700}>{t('rating')}</Typography>
           </Stack>
 
-          {provider.rating ? (
+          {ratingValue > 0 ? (
             <>
               <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 1 }}>
-                <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary' }}>{Number(provider.rating).toFixed(1)}</Typography>
+                <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary' }}>{ratingValue.toFixed(1)}</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>/ 5</Typography>
               </Stack>
-              <StarRating rating={provider.rating} />
+              <StarRating rating={ratingValue} />
               <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.75, display: 'block' }}>
-                {t('basedOnReviews', { count: provider.reviewCount ?? 0 })}
+                {t('basedOnReviews', { count: reviewTotal })}
               </Typography>
             </>
           ) : (
@@ -386,8 +392,7 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
 
           <Stack spacing={0.75} sx={{ mt: 2 }}>
             {reviewStats.ratingCounts.map(({ star, count }) => {
-              const total = reviewStats.totalReviews || provider.reviewCount || 0;
-              const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+              const pct = reviewTotal > 0 ? Math.round((count / reviewTotal) * 100) : 0;
               return (
                 <Stack key={star} direction="row" alignItems="center" spacing={1}>
                   <Typography variant="caption" sx={{ width: 8, color: 'text.secondary' }}>{star}</Typography>
@@ -456,7 +461,7 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             )}
           </Stack>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 3 }}>
             {previewServices.length ? (
               previewServices.map((service) => (
                 <Fragment key={service._id || service.id}>

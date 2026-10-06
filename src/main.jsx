@@ -11,12 +11,8 @@ import { CONFIG } from './config-global';
 import { ChunkErrorBoundary } from './components/error-boundary/chunk-error-boundary';
 
 import { persistor, store } from './store/store';
-import { captureTrafficSource, getLastTouchTrafficSource, getTrafficSource } from './utils/traffic-source';
-const firstTouch = captureTrafficSource();
-
-console.log('[traffic-source] TEMP this visit:', getTrafficSource(), '| document.referrer:', document.referrer || '(empty)');
-console.log('[traffic-source] TEMP stored first touch:', firstTouch);
-console.log('[traffic-source] TEMP stored last touch:', getLastTouchTrafficSource());
+import { captureTrafficSource } from './utils/traffic-source';
+captureTrafficSource();
 
 
 window.addEventListener('vite:preloadError', (event) => {

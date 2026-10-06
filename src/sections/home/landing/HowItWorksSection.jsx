@@ -1,118 +1,155 @@
-import { Box, Grid, Typography } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
+import { Box, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 
 import { Iconify } from 'src/components/iconify';
 
-import SurfaceCard from './SurfaceCard';
+import SectionHeader from './SectionHeader';
 import { HOW_IT_WORKS, WHY_UPNEXT } from './data';
 import { brand } from './theme';
 
+const SECTION_PADDING = {
+  px: { xs: 2, sm: 4, md: 6, lg: 8 },
+  py: { xs: 7, md: 11 },
+};
+
 export default function HowItWorksSection() {
-  const theme = useTheme();
-
   return (
-    <Box id="how-it-works" sx={{ mt: 4, mb: 3, scrollMarginTop: '92px', px: { xs: 2, md: 3 } }}>
-      <Grid container spacing={2} alignItems="stretch">
+    <>
+      <Box
+        id="how-it-works"
+        sx={{
+          ...SECTION_PADDING,
+          scrollMarginTop: '92px',
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <SectionHeader
+          eyebrow="Simple & Seamless"
+          title="How It Works"
+          subtitle="From discovering your stylist to your next appointment, in six easy steps."
+        />
 
-        {/* Left — How It Works */}
-        <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 2, color: brand.green[600], flexShrink: 0 }}>
-            How It Works
-          </Typography>
-          <Grid container spacing={2} alignItems="stretch" sx={{ flex: 1, alignContent: 'space-between' }}>
-            {HOW_IT_WORKS.map((item) => (
-              <Grid key={item.title} item xs={12} sm={4} sx={{ display: 'flex' }}>
-                <SurfaceCard
-                  sx={{
-                    p: 2.5,
-                    flex: 1,
-                    minHeight: 180,
-                    transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                    '&:hover': {
-                      transform: 'translateY(-3px)',
-                      boxShadow: (t) => `0 10px 26px ${alpha(brand.green[400], 0.14)}`,
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
-                    <Box
-                      sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 2,
-                        flexShrink: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: alpha(brand.green[400], 0.12),
-                      }}
-                    >
-                      <Iconify icon={item.icon} width={20} sx={{ color: brand.green[600] }} />
-                    </Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      {item.title}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.text}
-                  </Typography>
-                </SurfaceCard>
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
-
-        {/* Right — Why Choose UpNext */}
-        <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 2, color: brand.green[600], flexShrink: 0 }}>
-            Why Choose UpNext?
-          </Typography>
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 1.5 }}>
-            {WHY_UPNEXT.map((item) => (
-              <SurfaceCard
-                key={item.title}
+        <Box
+          sx={{
+            display: 'grid',
+            gap: { xs: 2.5, md: 3.5 },
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+          }}
+        >
+          {HOW_IT_WORKS.map((item, index) => (
+            <Box
+              key={item.title}
+              sx={{
+                position: 'relative',
+                overflow: 'hidden',
+                p: { xs: 3, md: 4 },
+                borderRadius: 3,
+                bgcolor: 'background.paper',
+                border: `1px solid ${alpha(brand.green[400], 0.2)}`,
+                transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  borderColor: alpha(brand.green[400], 0.5),
+                  boxShadow: `0 24px 48px -24px ${alpha(brand.green[800], 0.35)}`,
+                },
+              }}
+            >
+              <Typography
+                aria-hidden
+                variant="h2"
                 sx={{
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 1.5,
-                  borderLeft: `3px solid ${brand.green[400]}`,
-                  transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-                  '&:hover': {
-                    transform: 'translateX(3px)',
-                    boxShadow: `0 4px 16px ${alpha(brand.green[400], 0.12)}`,
-                  },
+                  position: 'absolute',
+                  top: { xs: 12, md: 16 },
+                  right: { xs: 18, md: 24 },
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  fontSize: { xs: '2.75rem', md: '3.5rem' },
+                  color: alpha(brand.green[400], 0.18),
+                  userSelect: 'none',
                 }}
               >
-                <Box
-                  sx={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 1.5,
-                    flexShrink: 0,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: alpha(brand.green[400], 0.1),
-                    mt: 0.25,
-                  }}
-                >
-                  <Iconify icon={item.icon} width={18} sx={{ color: brand.green[600] }} />
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                    {item.text}
-                  </Typography>
-                </Box>
-              </SurfaceCard>
-            ))}
-          </Box>
-        </Grid>
+                {String(index + 1).padStart(2, '0')}
+              </Typography>
 
-      </Grid>
-    </Box>
+              <Box
+                sx={{
+                  width: 52,
+                  height: 52,
+                  mb: { xs: 2.5, md: 3 },
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(brand.green[400], 0.12),
+                  border: `1px solid ${alpha(brand.green[400], 0.25)}`,
+                  color: brand.green[600],
+                }}
+              >
+                <Iconify icon={item.icon} width={24} />
+              </Box>
+
+              <Typography variant="h4" sx={{ mb: 1.25, fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.4rem' } }}>
+                {item.title}
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem' }}>{item.text}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          ...SECTION_PADDING,
+          background: `linear-gradient(180deg, ${brand.green[50]} 0%, ${brand.green[100]} 100%)`,
+          borderTop: `1px solid ${alpha(brand.green[400], 0.18)}`,
+        }}
+      >
+        <SectionHeader
+          eyebrow="The UpNext Difference"
+          title="Why Choose UpNext?"
+          subtitle="Everything you need to book with confidence, all in one place."
+        />
+
+        <Box
+          sx={{
+            display: 'grid',
+            gap: { xs: 4, md: 5 },
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: `repeat(${Math.min(WHY_UPNEXT.length, 4)}, minmax(0, 1fr))`,
+            },
+          }}
+        >
+          {WHY_UPNEXT.map((item) => (
+            <Box key={item.title} sx={{ textAlign: 'center', px: { md: 1 } }}>
+              <Box
+                sx={{
+                  width: 68,
+                  height: 68,
+                  mx: 'auto',
+                  mb: 2.5,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  background: `linear-gradient(135deg, ${brand.green[400]}, ${brand.green[600]})`,
+                  boxShadow: `0 14px 28px -12px ${alpha(brand.green[600], 0.6)}`,
+                }}
+              >
+                <Iconify icon={item.icon} width={28} />
+              </Box>
+              <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, fontSize: { xs: '1.2rem', md: '1.3rem' } }}>
+                {item.title}
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem', maxWidth: 300, mx: 'auto' }}>
+                {item.text}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </>
   );
 }

@@ -1,12 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 
-import { CONFIG } from 'src/config-global';
 
 import { EventDetailView } from 'src/sections/event/view/event-detail-view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Event Details - ${CONFIG.site.name}` };
+const metadata = { title: `Event Details | UpNext` };
 
 export default function Page() {
   return (

@@ -5,6 +5,7 @@ import { useTheme } from '@mui/material/styles';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import HeroBanner from './HeroBanner';
+import PageHero from './PageHero';
 import AvailabilitySection from './AvailabilitySection';
 import EventsSection from './EventsSection';
 import HowItWorksSection from './HowItWorksSection';
@@ -22,7 +23,7 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
         >
-          <HeroBanner />
+          <HeroBanner onJoinAsProvider={onJoinAsProvider} />
         </m.div>
         <m.div
           initial={{ opacity: 0, y: 20 }}
@@ -40,6 +41,11 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
     ),
     reviews: (
       <Box component={MotionViewport}>
+        <PageHero
+          eyebrow="Reviews"
+          title="Customer Reviews"
+          subtitle="Hear from clients who found and booked their stylist through UpNext."
+        />
         <m.div variants={varFade({ distance: 24 }).inUp}>
           <ReviewsAndWhySection onJoinAsProvider={onJoinAsProvider} />
         </m.div>
@@ -47,6 +53,7 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
     ),
     events: (
       <Box component={MotionViewport}>
+        <PageHero eyebrow="Events" title="Events Near You" subtitle="Browse what is happening in your city and plan your look around it." />
         <m.div variants={varFade({ distance: 24 }).inUp}>
           <EventsSection />
         </m.div>
@@ -54,6 +61,11 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
     ),
     services: (
       <Box component={MotionViewport}>
+        <PageHero
+          eyebrow="Services"
+          title="Services & Packages"
+          subtitle="Explore treatments and bundles offered by stylists near you."
+        />
         <m.div variants={varFade({ distance: 24 }).inUp}>
           <ServicesPackagesSection />
         </m.div>
