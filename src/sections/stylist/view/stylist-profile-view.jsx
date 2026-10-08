@@ -58,7 +58,7 @@ export function StylistProfileView() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [pendingService, setPendingService] = useState(null);
 
-  const categories = business?.services?.categories || [];
+  const categories = (business?.services?.categories || []).filter((cat) => cat._id);
 
   const filteredServices = useMemo(() => {
     const items = business?.services?.items || [];

@@ -146,6 +146,6 @@ export const authRoutes = [
         <Outlet />
       </Suspense>
     ),
-    children: [authJwt, authAuth0],
+    children: [authJwt],
   },
 ];

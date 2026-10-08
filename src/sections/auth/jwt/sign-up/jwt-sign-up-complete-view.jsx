@@ -42,7 +42,7 @@ const PROVIDER_STEPS = [
   },
   {
     label: 'Details',
-    validateFields: ['location', 'categories', 'description', 'certifications', 'certificationFile'],
+    validateFields: ['location', 'categories', 'skills', 'description', 'certifications', 'certificationFile'],
   },
   {
     label: 'Specialties',

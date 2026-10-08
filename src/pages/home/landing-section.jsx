@@ -1,5 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 
+import { CONFIG } from 'src/config-global';
+
 import { HomeView } from 'src/sections/home/view';
 
 const SECTION_META = {
@@ -15,7 +17,7 @@ export default function LandingSectionPage({ section }) {
     return (
         <>
             <Helmet>
-                <title>{metadata.title} | UpNext</title>
+                <title>{`${metadata.title} | ${CONFIG.site.brand}`}</title>
             </Helmet>
             <HomeView section={section} />
         </>

@@ -5,10 +5,11 @@ import { alpha } from '@mui/material/styles';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar';
 import { useLiveLocation } from 'src/hooks/use-live-location';
 import { loadGoogleMapsPlaces } from 'src/lib/google-maps-loader';
 import { useGetPublicCategoriesQuery } from 'src/store/Reducer/categories-api';
-import { useGetPublicBusinessesQuery } from 'src/store/Reducer/businesses-api';
+import { useGetPublicBusinessesQuery, useSearchByImageMutation } from 'src/store/Reducer/businesses-api';
 import { AddressFilterField } from 'src/sections/active-sections/services-view/components/address-filter-field';
 import { getItemId, normalizePackage, normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
 import { PortfolioViewDialog } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-view-dialog';
@@ -16,6 +17,7 @@ import { isRealCoords } from 'src/utils/my-location-storage';
 import { reverseGeocode } from 'src/utils/reverse-geocode';
 
 import AiSearchBar from './AiSearchBar';
+import ImageSearchPanel from './ImageSearchPanel';
 import SectionHeader from './SectionHeader';
 import CardSkeleton from './CardSkeleton';
 import FilterPill from './FilterPill';
@@ -27,6 +29,7 @@ import { brand } from './theme';
 import { useOpenListing } from './use-open-listing';
 
 const PAGE_LIMIT = 12;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 // Result types the AI search can return, in display order. `key` matches the response field.
 const RESULT_TABS = [
@@ -39,7 +42,8 @@ const RESULT_TABS = [
 // Per-type totals across all pages. Falls back to the business-level total, then to nothing
 // (callers use the current page's item count instead).
 function getTypeTotal(meta, key) {
-  const total = meta?.counts?.[key] ?? meta?.totals?.[key] ?? meta?.[key]?.total ?? meta?.[`${key}Total`];
+  const total =
+    meta?.counts?.[key] ?? meta?.totals?.[key] ?? meta?.[key]?.totalRecords ?? meta?.[key]?.total ?? meta?.[`${key}Total`];
   if (total != null) return total;
   if (key === 'businesses') return meta?.totalRecords ?? meta?.total;
   return undefined;
@@ -101,10 +105,74 @@ export default function AvailabilitySection({ onSelectStylist }) {
     setKeyword(value.trim());
     setActiveTab(RESULT_TABS[0].key);
   }, []);
+  const [imageFile, setImageFile] = useState(null);
+  const [submittedImage, setSubmittedImage] = useState(null);
+  const [searchByImage, { data: imageData, isLoading: isImageSearching, reset: resetImageSearch }] = useSearchByImageMutation();
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const imagePreview = useMemo(() => {
+    if (!imageFile) return '';
+    return typeof imageFile === 'string' ? imageFile : URL.createObjectURL(imageFile);
+  }, [imageFile]);
+  useEffect(
+    () => () => {
+      if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+    },
+    [imagePreview]
+  );
+
+  const clearImage = useCallback(() => {
+    setImageFile(null);
+    setSubmittedImage(null);
+    resetImageSearch();
+  }, [resetImageSearch]);
+  const handleImageChange = useCallback(
+    (file) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please choose an image file.');
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error('That photo is too large. Please choose one under 5 MB.');
+        return;
+      }
+      setSearch('');
+      setKeyword('');
+      setSubmittedImage(null);
+      resetImageSearch();
+      setImageFile(file);
+      setImageDialogOpen(false);
+    },
+    [resetImageSearch]
+  );
+  const submitImageSearch = useCallback(
+    async (image) => {
+      setKeyword('');
+      setSubmittedImage(image);
+      setActiveTab(RESULT_TABS[0].key);
+      try {
+        await searchByImage(image).unwrap();
+      } catch (error) {
+        setSubmittedImage(null);
+        toast.error(error?.data?.message || 'Photo search failed. Please try again.');
+      }
+    },
+    [searchByImage]
+  );
+  const handleImageLink = (url) => {
+    setSearch('');
+    setImageFile(url);
+    setImageDialogOpen(false);
+    submitImageSearch(url);
+  };
+  const handleSearchSubmit = () => {
+    if (imageFile) submitImageSearch(imageFile);
+    else submitSearch(search);
+  };
   const resetSearch = useCallback(() => {
     setSearch('');
     setKeyword('');
-  }, []);
+    clearImage();
+  }, [clearImage]);
   const [queryLocation, setQueryLocation] = useState(null);
   const { isLocating: isDetectingLocation, requestLocation } = useLiveLocation();
 
@@ -158,12 +226,14 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const [pageState, setPageState] = useState({ filterKey, page: 1 });
   const page = pageState.filterKey === filterKey ? pageState.page : 1;
 
-  const { data, isFetching, isLoading } = useGetPublicBusinessesQuery({ ...filterArgs, page });
+  const { data: listData, isFetching, isLoading } = useGetPublicBusinessesQuery({ ...filterArgs, page });
+  const isImageMode = Boolean(submittedImage) && (isImageSearching || Boolean(imageData));
+  const data = isImageMode ? imageData : listData;
 
   const businessTypeOptions = useMemo(() => {
-    const list = data?.meta?.businessTypeList || ['all', 'solo', 'team'];
+    const list = listData?.meta?.businessTypeList || ['all', 'solo', 'team'];
     return list.map((value) => ({ value, label: BUSINESS_TYPE_LABELS[value] || value }));
-  }, [data]);
+  }, [listData]);
 
   const openListing = useOpenListing();
   const [viewPortfolio, setViewPortfolio] = useState(null);
@@ -185,6 +255,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const totalRecords = results.reduce((sum, tab) => sum + tab.total, 0);
 
   const totalPages = useMemo(() => {
+    if (isImageMode) return 1;
     const meta = data?.meta;
     const explicit = meta?.totalPages ?? meta?.pages ?? meta?.pageCount;
     if (explicit != null) return Math.max(1, explicit);
@@ -195,7 +266,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     // No totals from the API: offer a next page whenever this one came back full.
     const isFullPage = RESULT_TABS.some((tab) => (data?.[tab.key]?.length || 0) >= PAGE_LIMIT);
     return page + (isFullPage ? 1 : 0);
-  }, [data, page]);
+  }, [data, page, isImageMode]);
 
   const handlePageChange = (_, nextPage) => {
     setPageState({ filterKey, page: nextPage });
@@ -206,6 +277,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     let count = 0;
 
     if (keyword) count += 1;
+    if (isImageMode) count += 1;
     if (queryLocation?.address) count += 1;
     if (categoryId !== DEFAULT_CATEGORY.value) count += 1;
     if (businessType !== DEFAULT_BUSINESS_TYPE) count += 1;
@@ -215,7 +287,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     if (sortBy !== DEFAULT_SORT) count += 1;
 
     return count;
-  }, [keyword, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
+  }, [keyword, isImageMode, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
 
   const resetFilters = () => {
     resetSearch();
@@ -292,7 +364,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     popper: { disablePortal: false },
   }), [date]);
 
-  const isReplacing = isLoading || isFetching;
+  const isReplacing = isImageMode ? isImageSearching : isLoading || isFetching;
 
   return (
     <Box id="available-now" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 7, md: 11 }, scrollMarginTop: '72px' }}>
@@ -319,9 +391,20 @@ export default function AvailabilitySection({ onSelectStylist }) {
           value={search}
           onChange={handleSearchChange}
           onClear={resetSearch}
-          onSubmit={() => submitSearch(search)}
-          isDirty={search.trim() !== keyword}
-          placeholder='Try: "balayage specialist open this weekend"'
+          onSubmit={handleSearchSubmit}
+          isDirty={imageFile ? imageFile !== submittedImage : search.trim() !== keyword}
+          placeholder='Try: "eyeliner, eyelashes"'
+          image={imageFile}
+          imagePreview={imagePreview}
+          onOpenImageSearch={() => setImageDialogOpen((prev) => !prev)}
+          isSearching={isImageSearching}
+        />
+
+        <ImageSearchPanel
+          open={imageDialogOpen}
+          onClose={() => setImageDialogOpen(false)}
+          onFile={handleImageChange}
+          onLink={handleImageLink}
         />
       </Box>
 
@@ -387,6 +470,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
           gap: 1,
           mb: { xs: 3.5, md: 5 },
           p: 1.25,
+          ...(isImageMode && { opacity: 0.5, pointerEvents: 'none' }),
           borderRadius: 3,
           bgcolor: (theme) => alpha(theme.palette.background.paper, 0.9),
           border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -483,6 +567,15 @@ export default function AvailabilitySection({ onSelectStylist }) {
       </Box>
 
       <Box ref={resultsRef} sx={{ scrollMarginTop: '92px' }} />
+
+      {isImageMode && !isReplacing && data?.imageAnalysis?.description && (
+        <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+          Your photo looks like:{' '}
+          <Box component="strong" sx={{ color: 'text.primary' }}>
+            {data.imageAnalysis.description}
+          </Box>
+        </Typography>
+      )}
 
       {appliedFilterCount > 0 && !isReplacing && (
         <Typography variant="body2" sx={{ mb: 1.5, color: 'text.secondary' }}>
@@ -595,12 +688,14 @@ export default function AvailabilitySection({ onSelectStylist }) {
                   </Box>
 
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    {keyword ? 'No results found' : 'No stylists found'}
+                    {keyword || isImageMode ? 'No results found' : 'No stylists found'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.8, mb: 3 }}>
-                    {keyword
-                      ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
-                      : 'No stylists match your current filters. Try a different search or category.'}
+                    {isImageMode
+                      ? 'Nothing matched your photo. Try a clearer photo or describe what you want instead.'
+                      : keyword
+                        ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
+                        : 'No stylists match your current filters. Try a different search or category.'}
                   </Typography>
 
                   <Box

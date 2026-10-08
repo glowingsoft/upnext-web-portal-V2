@@ -94,7 +94,7 @@ export function AuthSplitLayout({ sx, section, children }) {
               },
             },
           }}
-          sx={{ position: { [layoutQuery]: 'fixed' } }}
+          sx={{ position: { xs: 'static', [layoutQuery]: 'fixed' } }}
         />
       }
       /** **************************************

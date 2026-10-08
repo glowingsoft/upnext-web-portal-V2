@@ -86,6 +86,7 @@ function mapApiToProvider(apiData) {
     services: p.services || [],
     rating: p.rating?.avgRating ?? p.rating ?? null,
     reviewCount: p.rating?.totalReviews ?? p.reviewCount ?? 0,
+    ratingCount: p.rating?.ratingCount || null,
     nextAvailableSlot: apiData.nextAvailableSlot || null,
   };
 }

@@ -74,6 +74,7 @@ export function SkillsField() {
               <TextField
                 {...params}
                 label="Skills"
+                InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
                 placeholder={hasReachedLimit ? '' : '+ Skills'}
                 error={!!error}
                 helperText={error?.message}
@@ -287,6 +288,7 @@ export function StepProviderProfile({ step }) {
         <Field.AddressAutocomplete
           name="location"
           label="Location"
+          InputLabelProps={{ shrink: true }}
           placeholder="Enter business location"
           onPlaceSelected={({ lat, lng }) => {
             setValue('locationLat', lat, { shouldDirty: true });
@@ -321,6 +323,7 @@ export function StepProviderProfile({ step }) {
           <Field.Text
             name="description"
             label="Description"
+            InputLabelProps={{ shrink: true }}
             placeholder="Describe your business in a few words"
             multiline
             minRows={3}
@@ -423,15 +426,15 @@ export function StepProviderProfile({ step }) {
       {/* Business Name */}
       <Field.Text name="businessName" label="Business Name" placeholder="Enter business name" InputLabelProps={{ shrink: true }} />
 
-      <Field.Select name="businessType" label="Business Type">
+      <Field.Select name="businessType" label="Business Type" InputLabelProps={{ shrink: true }}>
         <MenuItem value="solo">Solo</MenuItem>
         <MenuItem value="team">Team</MenuItem>
       </Field.Select>
 
       {businessType === 'team' && (
-        <Field.Text name="businessSize" label="Team Size" type="number" placeholder="Number of team members" />
+        <Field.Text name="businessSize" label="Team Size" type="number" placeholder="Number of team members" InputLabelProps={{ shrink: true }} />
       )}
-      <Field.Text name="experience" label="Years of Experience" type="number" placeholder="Years of experience" />
+      <Field.Text name="experience" label="Years of Experience" type="number" placeholder="Years of experience" InputLabelProps={{ shrink: true }} />
     </Stack>
   );
 }

@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import { varAlpha } from 'src/theme/styles';
 import { useGetReviewsQuery } from 'src/store/Reducer/services-api';
-import { useGetBusinessReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
+import { useGetAdminReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
 import { normalizeReviewStats } from 'src/utils/reviews';
 import { formatSlotTime12h } from 'src/utils/schedule-format';
 import ServiceCard from '../../services-view/components/service-card-main';
@@ -126,8 +126,8 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
     { scope: 'business', targetId: reviewsTargetId, page: 1, limit: 1 },
     { skip: !reviewsTargetId || isAdminRoute || isPublicView }
   );
-  const adminStatsResult = useGetBusinessReviewsQuery(
-    { businessId: reviewsTargetId, page: 1, limit: 1 },
+  const adminStatsResult = useGetAdminReviewsQuery(
+    { scope: 'business', targetId: reviewsTargetId, status: 'approved', page: 1, limit: 1 },
     { skip: !reviewsTargetId || !isAdminRoute }
   );
   const publicStatsResult = useGetBusinessReviewsPublicQuery(
@@ -135,13 +135,13 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
     { skip: !reviewsTargetId || !isPublicView }
   );
   const { data: reviewStatsData } = isAdminRoute ? adminStatsResult : isPublicView ? publicStatsResult : genericStatsResult;
-  const reviewStats = normalizeReviewStats(reviewStatsData?.data?.stats, []);
-  const countedReviews = reviewStats.ratingCounts.reduce((sum, item) => sum + item.count, 0);
-  const countedAverage = countedReviews
-    ? reviewStats.ratingCounts.reduce((sum, item) => sum + item.star * item.count, 0) / countedReviews
-    : 0;
-  const reviewTotal = reviewStats.totalReviews || countedReviews || Number(provider.reviewCount) || 0;
-  const ratingValue = reviewStats.averageRating || countedAverage || Number(provider.rating) || 0;
+  const reviewStats = normalizeReviewStats(isAdminRoute ? reviewStatsData?.meta?.stats : reviewStatsData?.data?.stats, []);
+  const publishedReviews = Number(provider.reviewCount) || 0;
+  const ratingValue = Number(provider.rating) || 0;
+  const ratingBars = provider.ratingCount
+    ? [5, 4, 3, 2, 1].map((star) => ({ star, count: Number(provider.ratingCount[star]) || 0 }))
+    : reviewStats.ratingCounts;
+  const reviewTotal = ratingBars.reduce((sum, item) => sum + item.count, 0);
 
   const handleViewService = (service) => {
     const serviceId = service?._id || service?.id;
@@ -380,7 +380,7 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
               </Stack>
               <StarRating rating={ratingValue} />
               <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.75, display: 'block' }}>
-                {t('basedOnReviews', { count: reviewTotal })}
+                {t('basedOnReviews', { count: publishedReviews })}
               </Typography>
             </>
           ) : (
@@ -390,8 +390,8 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             </Stack>
           )}
 
-          <Stack spacing={0.75} sx={{ mt: 2 }}>
-            {reviewStats.ratingCounts.map(({ star, count }) => {
+          <Stack spacing={0.75} sx={{ mt: ratingBars.length ? 2 : 0 }}>
+            {ratingBars.map(({ star, count }) => {
               const pct = reviewTotal > 0 ? Math.round((count / reviewTotal) * 100) : 0;
               return (
                 <Stack key={star} direction="row" alignItems="center" spacing={1}>

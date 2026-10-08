@@ -83,7 +83,11 @@ export const ProviderProfileSchema = zod
       .nullable()
       .refine((v) => Boolean(v?.optionId), { message: 'Certification is required!' }),
     certificationFile: zod.any().nullable().optional(),
-    skills: zod.array(zod.string()).max(10, { message: 'You can add up to 10 skills.' }).default([]),
+    skills: zod
+      .array(zod.string())
+      .min(1, { message: 'Add at least one skill.' })
+      .max(10, { message: 'You can add up to 10 skills.' })
+      .default([]),
     description: zod.string().min(1, { message: 'Business description is required!' }).max(1000, { message: 'Description must be 1000 characters or less.' }),
 
     // Step 3 — Social (all optional)

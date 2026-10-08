@@ -188,6 +188,7 @@
   "details": "Details",
   "rating": "Rating",
   "basedOnReviews": "Based on {{count}} reviews",
+  "basedOnReviews_one": "Based on {{count}} review",
   "experienceWithValue": "{{value}} Experience",
   "all": "All",
   "fiveStars": "5 Stars",

@@ -1,4 +1,3 @@
-import { useAuth0 } from '@auth0/auth0-react';
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -12,24 +11,12 @@ import { useTranslate } from 'src/locales/use-locales';
 
 import { toast } from 'src/components/snackbar';
 
-import { signOut as amplifySignOut } from 'src/auth/context/amplify/action';
-import { signOut as firebaseSignOut } from 'src/auth/context/firebase/action';
-import { signOut as jwtSignOut } from 'src/auth/context/jwt/action';
-import { signOut as supabaseSignOut } from 'src/auth/context/supabase/action';
 import { useAuthContext } from 'src/auth/hooks';
 import { logout, selectUser } from 'src/store/slices/userSlice';
 import { walletsApi } from 'src/store/Reducer/wallets-api';
 import { categoriesApi } from 'src/store/Reducer/categories-api';
 import { authApi, useLogoutUserMutation } from 'src/store/Reducer/auth';
 import { getFcmTokenIfGranted } from 'src/lib/firebase-messaging';
-
-// ----------------------------------------------------------------------
-
-const signOut =
-  (CONFIG.auth.method === 'supabase' && supabaseSignOut) ||
-  (CONFIG.auth.method === 'firebase' && firebaseSignOut) ||
-  (CONFIG.auth.method === 'amplify' && amplifySignOut) ||
-  jwtSignOut;
 
 // ----------------------------------------------------------------------
 
@@ -40,7 +27,6 @@ export function SignOutButton({ onClose, ...other }) {
   const user = useSelector(selectUser);
 
   const { checkUserSession } = useAuthContext();
-  const { logout: signOutAuth0 } = useAuth0();
   const [logoutUser, { isLoading }] = useLogoutUserMutation();
 
   const handleLogout = useCallback(async () => {
@@ -71,28 +57,6 @@ export function SignOutButton({ onClose, ...other }) {
     }
   }, [dispatch, onClose, router, user?.role, logoutUser]);
 
-  const handleLogoutAuth0 = useCallback(async () => {
-    try {
-      await signOutAuth0();
-
-      // Clear all RTK Query caches
-      dispatch(walletsApi.util.resetApiState());
-      dispatch(categoriesApi.util.resetApiState());
-      dispatch(authApi.util.resetApiState());
-
-      onClose?.();
-
-      // Redirect based on user role
-      const redirectUrl = user?.role === 'admin' ? paths.admin.login : paths.dashboard.root;
-      router.replace(redirectUrl);
-
-      toast.success('Logged out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Unable to logout!');
-    }
-  }, [onClose, router, signOutAuth0, dispatch, user?.role]);
-
   return (
     <LoadingButton
       fullWidth
@@ -100,7 +64,7 @@ export function SignOutButton({ onClose, ...other }) {
       size="large"
       color="error"
       loading={isLoading}
-      onClick={CONFIG.auth.method === 'auth0' ? handleLogoutAuth0 : handleLogout}
+      onClick={handleLogout}
       {...other}
     >
       {t('logout')}

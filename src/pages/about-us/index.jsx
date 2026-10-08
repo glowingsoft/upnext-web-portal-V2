@@ -1,11 +1,12 @@
 import { Helmet } from 'react-helmet-async';
 
+import { CONFIG } from 'src/config-global';
 
 import { AboutView } from 'src/sections/about/view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `About us | UpNext` };
+const metadata = { title: `About us | ${CONFIG.site.brand}` };
 
 export default function Page() {
   return (

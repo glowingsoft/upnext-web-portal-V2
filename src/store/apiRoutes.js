@@ -45,6 +45,7 @@ export const API_ROUTES = {
 
   BUSINESSES: '/app/users/businesses',
   PUBLIC_BUSINESSES: '/app/public/businesses',
+  IMAGE_SEARCH: '/app/image-search',
   PUBLIC_BUSINESS_BY_ID: (id) => `/app/public/businesses/${id}`,
 
   CATEGORIES: '/categories',
