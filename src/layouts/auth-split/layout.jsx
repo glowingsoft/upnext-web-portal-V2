@@ -94,7 +94,7 @@ export function AuthSplitLayout({ sx, section, children }) {
               },
             },
           }}
-          sx={{ position: { [layoutQuery]: 'fixed' } }}
+          sx={{ position: { xs: 'static', [layoutQuery]: 'fixed' } }}
         />
       }
       /** **************************************
@@ -178,7 +178,13 @@ export function AuthSplitLayout({ sx, section, children }) {
               background: authBackground,
               backgroundColor: '#fff8e8',
               px: { xs: 3, sm: 2 },
-              py: { xs: 3, [layoutQuery]: 'calc(var(--layout-header-desktop-height) + 24px)' },
+              py: 5,
+              justifyContent: 'flex-start',
+              [theme.breakpoints.up(layoutQuery)]: {
+                marginBottom: 0,
+                justifyContent: 'center',
+                py: isSignUpRoute ? 4 : 'calc(var(--layout-header-desktop-height) + 24px)',
+              },
             }),
           }}
         >

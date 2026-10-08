@@ -5,28 +5,31 @@ import { alpha } from '@mui/material/styles';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar';
 import { useLiveLocation } from 'src/hooks/use-live-location';
 import { loadGoogleMapsPlaces } from 'src/lib/google-maps-loader';
 import { useGetPublicCategoriesQuery } from 'src/store/Reducer/categories-api';
-import { useGetPublicBusinessesQuery } from 'src/store/Reducer/businesses-api';
+import { useGetPublicBusinessesQuery, useSearchByImageMutation } from 'src/store/Reducer/businesses-api';
 import { AddressFilterField } from 'src/sections/active-sections/services-view/components/address-filter-field';
 import { getItemId, normalizePackage, normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
-import ServiceCard from 'src/sections/active-sections/services-view/components/service-card-main';
-import PackageCard from 'src/sections/active-sections/services-view/components/package-card';
-import { PortfolioCard } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-card';
 import { PortfolioViewDialog } from 'src/sections/active-sections/provider-detail-view/components/portfolio/portfolio-view-dialog';
 import { isRealCoords } from 'src/utils/my-location-storage';
 import { reverseGeocode } from 'src/utils/reverse-geocode';
 
 import AiSearchBar from './AiSearchBar';
+import ImageSearchPanel from './ImageSearchPanel';
+import SectionHeader from './SectionHeader';
 import CardSkeleton from './CardSkeleton';
 import FilterPill from './FilterPill';
+import ListingPreviewCard from './ListingPreviewCard';
+import PortfolioPreviewCard from './PortfolioPreviewCard';
 import StylistPreviewCard from './StylistPreviewCard';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
 import { useOpenListing } from './use-open-listing';
 
 const PAGE_LIMIT = 12;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 // Result types the AI search can return, in display order. `key` matches the response field.
 const RESULT_TABS = [
@@ -39,7 +42,8 @@ const RESULT_TABS = [
 // Per-type totals across all pages. Falls back to the business-level total, then to nothing
 // (callers use the current page's item count instead).
 function getTypeTotal(meta, key) {
-  const total = meta?.counts?.[key] ?? meta?.totals?.[key] ?? meta?.[key]?.total ?? meta?.[`${key}Total`];
+  const total =
+    meta?.counts?.[key] ?? meta?.totals?.[key] ?? meta?.[key]?.totalRecords ?? meta?.[key]?.total ?? meta?.[`${key}Total`];
   if (total != null) return total;
   if (key === 'businesses') return meta?.totalRecords ?? meta?.total;
   return undefined;
@@ -101,10 +105,74 @@ export default function AvailabilitySection({ onSelectStylist }) {
     setKeyword(value.trim());
     setActiveTab(RESULT_TABS[0].key);
   }, []);
+  const [imageFile, setImageFile] = useState(null);
+  const [submittedImage, setSubmittedImage] = useState(null);
+  const [searchByImage, { data: imageData, isLoading: isImageSearching, reset: resetImageSearch }] = useSearchByImageMutation();
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const imagePreview = useMemo(() => {
+    if (!imageFile) return '';
+    return typeof imageFile === 'string' ? imageFile : URL.createObjectURL(imageFile);
+  }, [imageFile]);
+  useEffect(
+    () => () => {
+      if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+    },
+    [imagePreview]
+  );
+
+  const clearImage = useCallback(() => {
+    setImageFile(null);
+    setSubmittedImage(null);
+    resetImageSearch();
+  }, [resetImageSearch]);
+  const handleImageChange = useCallback(
+    (file) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please choose an image file.');
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error('That photo is too large. Please choose one under 5 MB.');
+        return;
+      }
+      setSearch('');
+      setKeyword('');
+      setSubmittedImage(null);
+      resetImageSearch();
+      setImageFile(file);
+      setImageDialogOpen(false);
+    },
+    [resetImageSearch]
+  );
+  const submitImageSearch = useCallback(
+    async (image) => {
+      setKeyword('');
+      setSubmittedImage(image);
+      setActiveTab(RESULT_TABS[0].key);
+      try {
+        await searchByImage(image).unwrap();
+      } catch (error) {
+        setSubmittedImage(null);
+        toast.error(error?.data?.message || 'Photo search failed. Please try again.');
+      }
+    },
+    [searchByImage]
+  );
+  const handleImageLink = (url) => {
+    setSearch('');
+    setImageFile(url);
+    setImageDialogOpen(false);
+    submitImageSearch(url);
+  };
+  const handleSearchSubmit = () => {
+    if (imageFile) submitImageSearch(imageFile);
+    else submitSearch(search);
+  };
   const resetSearch = useCallback(() => {
     setSearch('');
     setKeyword('');
-  }, []);
+    clearImage();
+  }, [clearImage]);
   const [queryLocation, setQueryLocation] = useState(null);
   const { isLocating: isDetectingLocation, requestLocation } = useLiveLocation();
 
@@ -158,12 +226,14 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const [pageState, setPageState] = useState({ filterKey, page: 1 });
   const page = pageState.filterKey === filterKey ? pageState.page : 1;
 
-  const { data, isFetching, isLoading } = useGetPublicBusinessesQuery({ ...filterArgs, page });
+  const { data: listData, isFetching, isLoading } = useGetPublicBusinessesQuery({ ...filterArgs, page });
+  const isImageMode = Boolean(submittedImage) && (isImageSearching || Boolean(imageData));
+  const data = isImageMode ? imageData : listData;
 
   const businessTypeOptions = useMemo(() => {
-    const list = data?.meta?.businessTypeList || ['all', 'solo', 'team'];
+    const list = listData?.meta?.businessTypeList || ['all', 'solo', 'team'];
     return list.map((value) => ({ value, label: BUSINESS_TYPE_LABELS[value] || value }));
-  }, [data]);
+  }, [listData]);
 
   const openListing = useOpenListing();
   const [viewPortfolio, setViewPortfolio] = useState(null);
@@ -185,6 +255,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
   const totalRecords = results.reduce((sum, tab) => sum + tab.total, 0);
 
   const totalPages = useMemo(() => {
+    if (isImageMode) return 1;
     const meta = data?.meta;
     const explicit = meta?.totalPages ?? meta?.pages ?? meta?.pageCount;
     if (explicit != null) return Math.max(1, explicit);
@@ -195,7 +266,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     // No totals from the API: offer a next page whenever this one came back full.
     const isFullPage = RESULT_TABS.some((tab) => (data?.[tab.key]?.length || 0) >= PAGE_LIMIT);
     return page + (isFullPage ? 1 : 0);
-  }, [data, page]);
+  }, [data, page, isImageMode]);
 
   const handlePageChange = (_, nextPage) => {
     setPageState({ filterKey, page: nextPage });
@@ -206,6 +277,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     let count = 0;
 
     if (keyword) count += 1;
+    if (isImageMode) count += 1;
     if (queryLocation?.address) count += 1;
     if (categoryId !== DEFAULT_CATEGORY.value) count += 1;
     if (businessType !== DEFAULT_BUSINESS_TYPE) count += 1;
@@ -215,7 +287,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
     if (sortBy !== DEFAULT_SORT) count += 1;
 
     return count;
-  }, [keyword, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
+  }, [keyword, isImageMode, queryLocation, categoryId, businessType, minExperience, availability, date, sortBy]);
 
   const resetFilters = () => {
     resetSearch();
@@ -292,15 +364,56 @@ export default function AvailabilitySection({ onSelectStylist }) {
     popper: { disablePortal: false },
   }), [date]);
 
-  const isReplacing = isLoading || isFetching;
+  const isReplacing = isImageMode ? isImageSearching : isLoading || isFetching;
 
   return (
-    <Box id="available-now" sx={{ mb: 3, px: { xs: 2, md: 3 }, pt: { xs: 2, md: 3 } }}>
-      {/* Section header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+    <Box id="available-now" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 7, md: 11 }, scrollMarginTop: '72px' }}>
+      <SectionHeader
+        eyebrow="Book Today"
+        title="Available Now"
+        subtitle="Discover talented stylists near you who are ready to take your booking."
+      />
+
+      <Box
+        sx={{
+          position: 'relative',
+          maxWidth: 960,
+          mx: 'auto',
+          borderRadius: 5,
+          p: { xs: 2, sm: 3 },
+          mb: { xs: 4, md: 6 },
+          background: `linear-gradient(135deg, ${alpha(brand.green[100], 0.7)} 0%, ${alpha(brand.green[50], 0.95)} 100%)`,
+          border: `1px solid ${alpha(brand.green[400], 0.16)}`,
+          boxShadow: `0 24px 48px -32px ${alpha(brand.green[800], 0.35)}`,
+        }}
+      >
+        <AiSearchBar
+          value={search}
+          onChange={handleSearchChange}
+          onClear={resetSearch}
+          onSubmit={handleSearchSubmit}
+          isDirty={imageFile ? imageFile !== submittedImage : search.trim() !== keyword}
+          placeholder='Try: "eyeliner, eyelashes"'
+          image={imageFile}
+          imagePreview={imagePreview}
+          onOpenImageSearch={() => setImageDialogOpen((prev) => !prev)}
+          isSearching={isImageSearching}
+        />
+
+        <ImageSearchPanel
+          open={imageDialogOpen}
+          onClose={() => setImageDialogOpen(false)}
+          onFile={handleImageChange}
+          onLink={handleImageLink}
+        />
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, minHeight: 32 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: brand.green[600] }}>
-            Available Now
+          <Typography
+            sx={{ ml: 0.5, color: 'text.disabled', letterSpacing: '0.2em', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+          >
+            Refine Results
           </Typography>
           <Box
             sx={{
@@ -348,33 +461,6 @@ export default function AvailabilitySection({ onSelectStylist }) {
           Clear filters
         </Box>
       </Box>
-      
-      <Box
-        sx={{
-          position: 'relative',
-          borderRadius: 4,
-          p: { xs: 2, sm: 3 },
-          mb: 3,
-          background: `linear-gradient(135deg, ${alpha(brand.green[100], 0.7)} 0%, ${alpha(brand.green[50], 0.95)} 100%)`,
-          border: `1px solid ${alpha(brand.green[400], 0.16)}`,
-        }}
-      >
-        <AiSearchBar
-          value={search}
-          onChange={handleSearchChange}
-          onClear={resetSearch}
-          onSubmit={() => submitSearch(search)}
-          isDirty={search.trim() !== keyword}
-          placeholder='Try: "balayage specialist open this weekend"'
-        />
-      </Box>
-
-      <Typography
-        variant="overline"
-        sx={{ display: 'block', mb: 1, ml: 0.5, color: 'text.disabled', letterSpacing: 1, fontSize: '0.7rem' }}
-      >
-        Refine Results
-      </Typography>
 
       {/* Filter bar */}
       <Box
@@ -382,8 +468,9 @@ export default function AvailabilitySection({ onSelectStylist }) {
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          mb: 2.5,
-          p: 1,
+          mb: { xs: 3.5, md: 5 },
+          p: 1.25,
+          ...(isImageMode && { opacity: 0.5, pointerEvents: 'none' }),
           borderRadius: 3,
           bgcolor: (theme) => alpha(theme.palette.background.paper, 0.9),
           border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -481,6 +568,15 @@ export default function AvailabilitySection({ onSelectStylist }) {
 
       <Box ref={resultsRef} sx={{ scrollMarginTop: '92px' }} />
 
+      {isImageMode && !isReplacing && data?.imageAnalysis?.description && (
+        <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+          Your photo looks like:{' '}
+          <Box component="strong" sx={{ color: 'text.primary' }}>
+            {data.imageAnalysis.description}
+          </Box>
+        </Typography>
+      )}
+
       {appliedFilterCount > 0 && !isReplacing && (
         <Typography variant="body2" sx={{ mb: 1.5, color: 'text.secondary' }}>
           <Box component="strong" sx={{ color: 'text.primary' }}>
@@ -531,7 +627,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
       )}
 
       {isReplacing ? (
-        <Grid container spacing={2}>
+        <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
           {Array.from({ length: 8 }).map((_, index) => (
             <Grid key={index} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
               <CardSkeleton />
@@ -540,7 +636,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
         </Grid>
       ) : (
         <>
-          <Grid container spacing={2}>
+          <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
             {currentTab.items.length > 0 ? (
               currentTab.items.map((item) => (
                 <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
@@ -548,20 +644,20 @@ export default function AvailabilitySection({ onSelectStylist }) {
                     <StylistPreviewCard business={item} onSelectStylist={onSelectStylist} />
                   )}
                   {currentTab.key === 'services' && (
-                    <ServiceCard svc={normalizeService(item)} onView={() => openListing(normalizeService(item), 'services')} />
+                    <ListingPreviewCard
+                      kind="service"
+                      item={normalizeService(item)}
+                      onView={() => openListing(normalizeService(item), 'services')}
+                    />
                   )}
                   {currentTab.key === 'packages' && (
-                    <PackageCard pkg={normalizePackage(item)} onView={() => openListing(normalizePackage(item), 'packages')} />
+                    <ListingPreviewCard
+                      kind="package"
+                      item={normalizePackage(item)}
+                      onView={() => openListing(normalizePackage(item), 'packages')}
+                    />
                   )}
-                  {currentTab.key === 'portfolios' && (
-                    <Box sx={{ width: '100%' }}>
-                      <PortfolioCard
-                        item={{ ...item, businessName: item.businessName ?? item.business?.businessName }}
-                        canManage={false}
-                        onView={setViewPortfolio}
-                      />
-                    </Box>
-                  )}
+                  {currentTab.key === 'portfolios' && <PortfolioPreviewCard item={item} onView={setViewPortfolio} />}
                 </Grid>
               ))
             ) : (
@@ -592,12 +688,14 @@ export default function AvailabilitySection({ onSelectStylist }) {
                   </Box>
 
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    {keyword ? 'No results found' : 'No stylists found'}
+                    {keyword || isImageMode ? 'No results found' : 'No stylists found'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.8, mb: 3 }}>
-                    {keyword
-                      ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
-                      : 'No stylists match your current filters. Try a different search or category.'}
+                    {isImageMode
+                      ? 'Nothing matched your photo. Try a clearer photo or describe what you want instead.'
+                      : keyword
+                        ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
+                        : 'No stylists match your current filters. Try a different search or category.'}
                   </Typography>
 
                   <Box

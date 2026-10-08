@@ -29,9 +29,10 @@ export default function ProfileHeader({ business }) {
   const coverImage = normalizeImageUrl(business.coverImage);
   const isLicensed = String(business.certifications?.status || '').toLowerCase() === 'approved';
   const isLongDescription = (business.description?.length || 0) > 240;
+  const totalReviews = business.rating?.totalReviews ?? 0;
 
   return (
-    <SurfaceCard sx={{ mb: 3, overflow: 'hidden' }}>
+    <SurfaceCard sx={{ mb: 3, overflow: 'hidden', borderRadius: 3, border: `1px solid ${alpha(brand.green[400], 0.2)}` }}>
       {/* Cover image */}
       <Box
         sx={{
@@ -132,15 +133,24 @@ export default function ProfileHeader({ business }) {
                 lineHeight: '20px',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Iconify icon="mingcute:star-fill" width={15} sx={{ color: '#F59E0B', display: 'block' }} />
-                <Box component="span" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                  {Number(business.rating?.avgRating || 0).toFixed(1)}
+              {totalReviews > 0 ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Iconify icon="mingcute:star-fill" width={15} sx={{ color: '#F59E0B', display: 'block' }} />
+                  <Box component="span" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                    {Number(business.rating?.avgRating || 0).toFixed(1)}
+                  </Box>
+                  <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                    ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
+                  </Box>
                 </Box>
-                <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                  ({business.rating?.totalReviews ?? 0} {business.rating?.totalReviews === 1 ? 'review' : 'reviews'})
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Iconify icon="mingcute:star-line" width={15} sx={{ color: brand.green[400], display: 'block' }} />
+                  <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    New on UpNext
+                  </Box>
                 </Box>
-              </Box>
+              )}
 
               {business.location?.address && (
                 <>
@@ -279,7 +289,12 @@ function getMapsUrl(location) {
 }
 
 function MetaDot() {
-  return <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'text.disabled', flexShrink: 0 }} />;
+  return (
+    <Box
+      component="span"
+      sx={{ display: { xs: 'none', sm: 'block' }, width: 4, height: 4, borderRadius: '50%', bgcolor: 'text.disabled', flexShrink: 0 }}
+    />
+  );
 }
 
 // ----------------------------------------------------------------------

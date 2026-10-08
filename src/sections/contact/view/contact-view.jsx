@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
 
 import { m } from 'framer-motion';
 import {
   Box,
-  Container,
   Grid,
   InputLabel,
   OutlinedInput,
@@ -18,11 +16,10 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { varFade, MotionViewport } from 'src/components/animate';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
-import { selectUser } from 'src/store/slices/userSlice';
-import { useSubmitContactUsMutation, useSubmitSupportRequestMutation } from 'src/store/Reducer/contact-support-api';
+import { useSubmitSupportRequestMutation } from 'src/store/Reducer/contact-support-api';
 
 import { brand } from 'src/sections/home/landing/theme';
-import SurfaceCard from 'src/sections/home/landing/SurfaceCard';
+import PageHero from 'src/sections/home/landing/PageHero';
 
 const CONTACT_INFO = [
   { icon: 'mingcute:mail-line', label: 'General', value: 'hello@upnext.app' },
@@ -34,13 +31,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ContactView() {
   const theme = useTheme();
-  const user = useSelector(selectUser);
-  const isSignedIn = Boolean(user?.token);
 
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [submitContactUs, { isLoading: isSubmittingContactUs }] = useSubmitContactUsMutation();
-  const [submitSupportRequest, { isLoading: isSubmittingSupportRequest }] = useSubmitSupportRequestMutation();
-  const isSubmitting = isSubmittingContactUs || isSubmittingSupportRequest;
+  const [submitSupportRequest, { isLoading: isSubmitting }] = useSubmitSupportRequestMutation();
 
   const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -57,11 +50,7 @@ export function ContactView() {
     }
 
     try {
-      if (isSignedIn) {
-        await submitContactUs(form).unwrap();
-      } else {
-        await submitSupportRequest(form).unwrap();
-      }
+      await submitSupportRequest(form).unwrap();
       toast.success('Your message has been sent. We will get back to you shortly.');
       setForm({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
@@ -70,58 +59,53 @@ export function ContactView() {
   };
 
   return (
-    <Container maxWidth={false} sx={{ pt: { xs: 10, md: 12 }, pb: { xs: 6, md: 10 }, px: { xs: 2, md: 4 } }}>
-      <SurfaceCard
-        sx={{
-          borderRadius: 3,
-          backgroundColor: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          backdropFilter: 'blur(4px)',
-          overflow: 'hidden',
-        }}
-      >
+    <Box sx={{ pt: { xs: '64px', md: '66px' }, minHeight: '70vh', bgcolor: 'background.paper' }}>
+      <Box>
         {/* Hero */}
         <Box component={MotionViewport}>
           <m.div variants={varFade({ distance: 24 }).inDown}>
-            <Box
-              sx={{
-                px: { xs: 3, sm: 4, md: 6 },
-                py: { xs: 4, md: 6 },
-                background: `linear-gradient(145deg, ${brand.ink[900]} 0%, ${brand.green[900]} 52%, ${brand.green[800]} 100%)`,
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 900,
-                  color: '#fff',
-                  lineHeight: 1.1,
-                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
-                }}
-              >
-                Contact Us
-              </Typography>
-              <Typography variant="body2" sx={{ color: alpha('#fff', 0.6), mt: 1.5, maxWidth: 700 }}>
-                Have a question or want to get in touch? Fill in the form and we will get back to you shortly.
-              </Typography>
-            </Box>
+            <PageHero
+              eyebrow="Contact"
+              title="Contact Us"
+              subtitle="Have a question or want to get in touch? Fill in the form and we will get back to you shortly."
+            />
           </m.div>
         </Box>
 
         {/* Form + contact info */}
         <Box component={MotionViewport}>
           <m.div variants={varFade({ distance: 24 }).inUp}>
-            <Grid container>
+            <Box sx={{ px: { xs: 2.5, sm: 5, md: 6, lg: 8 }, py: { xs: 6, md: 10 } }}>
+            <Grid container spacing={{ xs: 5, md: 6, lg: 8 }} alignItems="flex-start">
               {/* Form */}
-              <Grid item xs={12} md={7}>
+              <Grid item xs={12} md={7} lg={8}>
                 <Box
                   component="form"
                   onSubmit={handleSubmit}
-                  sx={{ px: { xs: 3, sm: 4, md: 6 }, py: { xs: 4, md: 6 } }}
+                  sx={{
+                    py: { md: 1 },
+                    '& .MuiOutlinedInput-root': { bgcolor: '#fff', transition: 'box-shadow 0.2s ease' },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderWidth: '1.5px',
+                      borderColor: 'rgba(145,158,171,0.24)',
+                      transition: 'border-color 0.2s ease',
+                    },
+                    '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: brand.green[400] },
+                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderWidth: '1.5px',
+                      borderColor: brand.green[400],
+                    },
+                    '& .MuiOutlinedInput-root.Mui-focused': { boxShadow: `0 6px 20px ${alpha(brand.green[400], 0.2)}` },
+                  }}
                 >
-                  <Grid container spacing={2.5}>
+                  <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem', lg: '1.75rem' } }}>
+                    Send us a message
+                  </Typography>
+                  <Box sx={{ width: 48, height: '1px', mb: { xs: 3, md: 4 }, bgcolor: alpha(brand.green[400], 0.6) }} />
+
+                  <Grid container spacing={3}>
                     <Grid item xs={12} sm={6}>
-                      <InputLabel sx={{ mb: 0.75, fontWeight: 600, fontSize: '0.8125rem', color: theme.palette.text.primary }}>
+                      <InputLabel sx={{ mb: 1, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.palette.text.secondary }}>
                         Full Name
                       </InputLabel>
                       <OutlinedInput
@@ -129,12 +113,12 @@ export function ContactView() {
                         placeholder="Your name"
                         value={form.name}
                         onChange={handleChange('name')}
-                        sx={{ borderRadius: 2, fontSize: '0.875rem' }}
+                        sx={{ borderRadius: 2, fontSize: '0.95rem' }}
                       />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <InputLabel sx={{ mb: 0.75, fontWeight: 600, fontSize: '0.8125rem', color: theme.palette.text.primary }}>
+                      <InputLabel sx={{ mb: 1, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.palette.text.secondary }}>
                         Email Address
                       </InputLabel>
                       <OutlinedInput
@@ -143,12 +127,12 @@ export function ContactView() {
                         placeholder="your@email.com"
                         value={form.email}
                         onChange={handleChange('email')}
-                        sx={{ borderRadius: 2, fontSize: '0.875rem' }}
+                        sx={{ borderRadius: 2, fontSize: '0.95rem' }}
                       />
                     </Grid>
 
                     <Grid item xs={12}>
-                      <InputLabel sx={{ mb: 0.75, fontWeight: 600, fontSize: '0.8125rem', color: theme.palette.text.primary }}>
+                      <InputLabel sx={{ mb: 1, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.palette.text.secondary }}>
                         Subject
                       </InputLabel>
                       <OutlinedInput
@@ -156,12 +140,12 @@ export function ContactView() {
                         placeholder="What is this about?"
                         value={form.subject}
                         onChange={handleChange('subject')}
-                        sx={{ borderRadius: 2, fontSize: '0.875rem' }}
+                        sx={{ borderRadius: 2, fontSize: '0.95rem' }}
                       />
                     </Grid>
 
                     <Grid item xs={12}>
-                      <InputLabel sx={{ mb: 0.75, fontWeight: 600, fontSize: '0.8125rem', color: theme.palette.text.primary }}>
+                      <InputLabel sx={{ mb: 1, fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.palette.text.secondary }}>
                         Message
                       </InputLabel>
                       <TextField
@@ -172,7 +156,7 @@ export function ContactView() {
                         value={form.message}
                         onChange={handleChange('message')}
                         sx={{
-                          '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.875rem' },
+                          '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.95rem' },
                         }}
                       />
                     </Grid>
@@ -185,11 +169,14 @@ export function ContactView() {
                         loading={isSubmitting}
                         endIcon={<Iconify icon="mingcute:send-fill" width={18} />}
                         sx={{
-                          px: 4,
+                          px: 4.5,
+                          py: 1.6,
                           borderRadius: 50,
                           bgcolor: brand.green[400],
                           fontWeight: 700,
-                          '&:hover': { bgcolor: brand.green[600] },
+                          fontSize: '0.95rem',
+                          boxShadow: `0 8px 20px ${alpha(brand.green[400], 0.35)}`,
+                          '&:hover': { bgcolor: brand.green[600], boxShadow: `0 10px 24px ${alpha(brand.green[600], 0.35)}` },
                         }}
                       >
                         Send Message
@@ -200,42 +187,63 @@ export function ContactView() {
               </Grid>
 
               {/* Contact info sidebar */}
-              <Grid
-                item
-                xs={12}
-                md={5}
-                sx={{
-                  borderLeft: { md: `1px solid ${theme.palette.divider}` },
-                  borderTop: { xs: `1px solid ${theme.palette.divider}`, md: 'none' },
-                }}
-              >
-                <Box sx={{ px: { xs: 3, sm: 4, md: 6 }, py: { xs: 4, md: 6 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+              <Grid item xs={12} md={5} lg={4}>
+                <Box
+                  sx={{
+                    height: 1,
+                    p: { xs: 3, sm: 4, md: 5 },
+                    borderRadius: 3,
+                    background: `linear-gradient(160deg, ${brand.green[50]} 0%, ${brand.green[100]} 100%)`,
+                    border: `1px solid ${alpha(brand.green[400], 0.2)}`,
+                  }}
+                >
+                  <Typography variant="h4" sx={{ mb: 1, fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem', lg: '1.75rem' } }}>
                     Reach us directly
                   </Typography>
+                  <Box sx={{ width: 48, height: '1px', mb: { xs: 3, md: 4 }, bgcolor: alpha(brand.green[400], 0.6) }} />
 
                   <Stack spacing={3}>
                     {CONTACT_INFO.map((item) => (
                       <Box key={item.label} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                         <Box
                           sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 2,
-                            bgcolor: alpha(brand.green[400], 0.1),
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            bgcolor: 'background.paper',
+                            border: `1px solid ${alpha(brand.green[400], 0.3)}`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
                           }}
                         >
-                          <Iconify icon={item.icon} width={20} sx={{ color: brand.green[400] }} />
+                          <Iconify icon={item.icon} width={22} sx={{ color: brand.green[600] }} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: theme.palette.text.disabled, fontWeight: 600, display: 'block', mb: 0.25 }}>
+                          <Typography
+                            sx={{
+                              mb: 0.25,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              color: theme.palette.text.secondary,
+                            }}
+                          >
                             {item.label}
                           </Typography>
-                          <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                          <Typography
+                            component="a"
+                            href={`mailto:${item.value}`}
+                            sx={{
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              color: theme.palette.text.primary,
+                              textDecoration: 'none',
+                              '&:hover': { color: brand.green[600], textDecoration: 'underline', textUnderlineOffset: 3 },
+                            }}
+                          >
                             {item.value}
                           </Typography>
                         </Box>
@@ -247,24 +255,25 @@ export function ContactView() {
                     sx={{
                       mt: 5,
                       p: 3,
-                      borderRadius: 2.5,
-                      background: `linear-gradient(135deg, ${alpha(brand.ink[900], 0.05)} 0%, ${alpha(brand.green[400], 0.08)} 100%)`,
-                      border: `1px solid ${alpha(brand.green[400], 0.15)}`,
+                      borderRadius: 3,
+                      bgcolor: 'background.paper',
+                      border: `1px solid ${alpha(brand.green[400], 0.2)}`,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.75, fontSize: { xs: '1.15rem', sm: '1.15rem', md: '1.15rem', lg: '1.2rem' } }}>
                       Response time
                     </Typography>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.8 }}>
+                    <Typography sx={{ color: theme.palette.text.secondary, lineHeight: 1.8, fontSize: '0.92rem' }}>
                       We typically respond within 24 hours on business days. For urgent issues, include &ldquo;Urgent&rdquo; in your subject line.
                     </Typography>
                   </Box>
                 </Box>
               </Grid>
             </Grid>
+            </Box>
           </m.div>
         </Box>
-      </SurfaceCard>
-    </Container>
+      </Box>
+    </Box>
   );
 }

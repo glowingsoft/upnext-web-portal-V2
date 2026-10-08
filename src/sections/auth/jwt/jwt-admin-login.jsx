@@ -19,12 +19,14 @@ import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 import { Field, Form } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
 
 import { useDispatch } from 'react-redux';
 import { setPasswordResetSource } from './password-reset-flow-storage';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
 import { useAdminLoginMutation } from 'src/store/Reducer/auth';
 import { setUser } from 'src/store/slices/userSlice';
 import { handleApiError } from 'src/utils/errorHandler';
@@ -41,6 +43,7 @@ export const SignInSchema = zod.object({
 // ----------------------------------------------------------------------
 
 export function JwtAdminLoginView() {
+  usePublicFonts();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -139,14 +142,16 @@ export function JwtAdminLoginView() {
       reset();
       toast.success('Login successful!');
     } catch (error) {
-      setErrorMsg(typeof error === 'string' ? error : error.message);
+      setErrorMsg(typeof error === 'string' ? error : error?.data?.message || error?.message || 'Something went wrong. Please try again.');
       handleApiError(error);
     }
   });
 
   const renderHead = (
     <Stack spacing={1.5} sx={{ mb: { xs: 3.5, sm: 5 } }}>
-      <Typography variant="h5">Sign in to your admin account</Typography>
+      <Typography variant="h4" sx={authHeadingSx}>
+        Sign in to your admin account
+      </Typography>
 
       {/* <Stack direction="row" spacing={0.5}>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -161,7 +166,7 @@ export function JwtAdminLoginView() {
   );
 
   const renderForm = (
-    <Stack spacing={{ xs: 2.5, sm: 3 }}>
+    <Stack spacing={{ xs: 2.5, sm: 3 }} sx={authFieldSx}>
       <Field.Text name="email" label="Email address" InputLabelProps={{ shrink: true }} />
 
       <Stack spacing={1.5}>

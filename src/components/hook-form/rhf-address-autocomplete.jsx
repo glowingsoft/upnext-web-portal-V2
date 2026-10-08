@@ -8,6 +8,8 @@ import { loadGoogleMapsPlaces } from 'src/lib/google-maps-loader';
 
 import './rhf-address-autocomplete.css';
 
+const TOO_BROAD_PLACE_TYPES = ['country', 'administrative_area_level_1', 'administrative_area_level_2', 'locality', 'postal_code'];
+
 // ----------------------------------------------------------------------
 // Google Places Autocomplete bound to an RHF text field. Typing shows real address
 // suggestions; picking one updates the field's text and reports the real
@@ -34,8 +36,7 @@ export function RHFAddressAutocomplete({ name, helperText, onPlaceSelected, ...o
         if (!inputRef.current || autocompleteRef.current) return;
 
         autocompleteRef.current = new maps.places.Autocomplete(inputRef.current, {
-          fields: ['formatted_address', 'geometry'],
-          types: ['address'],
+          fields: ['formatted_address', 'geometry', 'name', 'types'],
         });
 
         placeChangedListener = autocompleteRef.current.addListener('place_changed', () => {
@@ -43,7 +44,14 @@ export function RHFAddressAutocomplete({ name, helperText, onPlaceSelected, ...o
           const location = place?.geometry?.location;
           if (!location) return;
 
-          const address = place.formatted_address || inputRef.current.value;
+          if ((place.types || []).some((type) => TOO_BROAD_PLACE_TYPES.includes(type))) {
+            setError(name, { type: 'manual', message: t('pleaseSelectValidAddress') });
+            return;
+          }
+
+          const isNamedPlace =
+            place.name && (place.types || []).includes('establishment') && !(place.formatted_address || '').includes(place.name);
+          const address = [isNamedPlace ? place.name : '', place.formatted_address || inputRef.current.value].filter(Boolean).join(', ');
           trustedValueRef.current = address;
           setValue(name, address, { shouldValidate: true, shouldDirty: true });
           clearErrors(name);

@@ -60,6 +60,7 @@ export function StepCustomerProfile({ step }) {
         <Field.AddressAutocomplete
           name="locationAddress"
           label="Location"
+          InputLabelProps={{ shrink: true }}
           onPlaceSelected={({ lat, lng }) => {
             setValue('locationLat', lat, { shouldDirty: true });
             setValue('locationLng', lng, { shouldDirty: true });
@@ -79,6 +80,7 @@ export function StepCustomerProfile({ step }) {
         <Field.Text
           name="description"
           label="Anything Important We Should Know?"
+          InputLabelProps={{ shrink: true }}
           placeholder="Describe in a few words..."
           multiline
           rows={3}

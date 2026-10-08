@@ -11,8 +11,10 @@ import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 import { paths } from 'src/routes/paths';
 import { setUser } from 'src/store/slices/userSlice';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 import { consumeAuthRedirectPath, consumeAuthService, markLoginNavHandled } from '../auth-redirect-storage';
+import { authFieldSx, authHeadingSx } from '../auth-form-styles';
 import { CustomerProfileSchema, ProviderProfileSchema, customerProfileDefaultValues, providerProfileDefaultValues } from './sign-up-schema';
 import { SignUpStepper } from './sign-up-stepper';
 import { StepCustomerProfile } from './steps/step-customer-profile';
@@ -40,7 +42,7 @@ const PROVIDER_STEPS = [
   },
   {
     label: 'Details',
-    validateFields: ['location', 'categories', 'description', 'certifications', 'certificationFile'],
+    validateFields: ['location', 'categories', 'skills', 'description', 'certifications', 'certificationFile'],
   },
   {
     label: 'Specialties',
@@ -68,6 +70,7 @@ function renderStepContent(activeStep, role) {
 }
 
 export function JwtSignUpCompleteView() {
+  usePublicFonts();
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.user);
@@ -310,7 +313,9 @@ export function JwtSignUpCompleteView() {
   return (
     <>
       <Stack spacing={1} sx={{ mb: 2.5 }}>
-        <Typography variant="h5">{role === 'provider' ? 'Set up your business' : 'Set up your profile'}</Typography>
+        <Typography variant="h4" sx={authHeadingSx}>
+          {role === 'provider' ? 'Set up your business' : 'Set up your profile'}
+        </Typography>
       </Stack>
 
       {errorMsg ? (
@@ -322,7 +327,7 @@ export function JwtSignUpCompleteView() {
       <Form methods={methods}>
         {steps.length > 1 ? <SignUpStepper steps={steps} activeStep={activeStep} /> : null}
 
-        <Box sx={{ minHeight: 280 }}>{renderStepContent(activeStep, role)}</Box>
+        <Box sx={{ minHeight: 280, ...authFieldSx }}>{renderStepContent(activeStep, role)}</Box>
 
         <Stack direction="row" spacing={1.5} justifyContent={canGoBack ? 'space-between' : 'flex-end'} sx={{ mt: 2 }}>
           {canGoBack ? (

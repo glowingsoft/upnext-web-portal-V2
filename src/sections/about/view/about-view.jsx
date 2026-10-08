@@ -9,5 +9,5 @@ export function AboutView() {
   const { data, isLoading, isFetching } = useGetLegalContentQuery('about');
   const html = getMultiLangValue(data?.data?.about_us, getApiLanguage(currentLang.value));
 
-  return <LegalPublicView title="About Us" html={html} loading={isLoading || isFetching} />;
+  return <LegalPublicView eyebrow="Company" title="About Us" html={html} loading={isLoading || isFetching} />;
 }

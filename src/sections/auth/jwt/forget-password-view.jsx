@@ -13,10 +13,14 @@ import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 
 import { Field, Form } from 'src/components/hook-form';
+import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
+
 import { useResendOtpEmailMutation } from 'src/store/Reducer/auth';
-import { setPasswordResetEmail } from './password-reset-flow-storage';
+import { getPasswordResetSource, setPasswordResetEmail } from './password-reset-flow-storage';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
 
 // ----------------------------------------------------------------------
 
@@ -27,9 +31,11 @@ const ForgotPasswordSchema = zod.object({
 // ----------------------------------------------------------------------
 
 export function JwtForgetPasswordView() {
+  usePublicFonts();
   const router = useRouter();
   const [errorMsg, setErrorMsg] = useState('');
   const [sendOtp] = useResendOtpEmailMutation();
+  const signInHref = getPasswordResetSource() === 'admin' ? paths.admin.login : paths.auth.jwt.signIn;
 
   const methods = useForm({
     resolver: zodResolver(ForgotPasswordSchema),
@@ -56,17 +62,14 @@ export function JwtForgetPasswordView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 5 }}>
-        <Typography variant="h5">Forget your password?</Typography>
+      <Stack spacing={1.5} sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Forgot your password?
+        </Typography>
 
-        <Stack direction="row" spacing={0.5}>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {`Don't have an account?`}
-          </Typography>
-          <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
-            Get started
-          </Link>
-        </Stack>
+        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.7 }}>
+          Enter the email linked to your account and we will send you a one-time code (OTP) to reset it.
+        </Typography>
       </Stack>
 
       {errorMsg ? (
@@ -76,12 +79,22 @@ export function JwtForgetPasswordView() {
       ) : null}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={authFieldSx}>
           <Field.Text name="email" label="Email address" placeholder="Enter your email" InputLabelProps={{ shrink: true }} />
 
           <LoadingButton fullWidth color="primary" size="large" type="submit" variant="contained" loading={isSubmitting} loadingIndicator="Sending OTP...">
             Send OTP
           </LoadingButton>
+
+          <Link
+            component={RouterLink}
+            href={signInHref}
+            variant="subtitle2"
+            sx={{ alignSelf: 'center', display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+          >
+            <Iconify icon="mingcute:arrow-left-line" width={16} />
+            Back to sign in
+          </Link>
         </Stack>
       </Form>
     </>

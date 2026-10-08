@@ -1,7 +1,6 @@
-import { useState } from 'react';
-
-import { Box, Container, Divider, Grid, InputBase, Stack, Typography } from '@mui/material';
+import { Box, Container, Divider, Grid, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { paths } from 'src/routes/paths';
@@ -11,7 +10,25 @@ import { Iconify } from 'src/components/iconify';
 
 import { brand } from './theme';
 
-const LINK_GROUPS = [
+const STATIC_LINK_GROUPS = [
+  {
+    heading: 'Explore',
+    links: [
+      { label: 'Home', to: '/' },
+      { label: 'Services', to: paths.services },
+      { label: 'Reviews', to: paths.reviews },
+      { label: 'Events', to: paths.events },
+    ],
+  },
+  {
+    heading: 'Company',
+    links: [
+      { label: 'About Us', to: paths.about },
+      { label: 'How it Works', to: paths.howItWorks },
+      { label: 'FAQ', to: paths.faqs },
+      { label: 'Contact Us', to: paths.contact },
+    ],
+  },
   {
     heading: 'Legal',
     links: [
@@ -19,43 +36,43 @@ const LINK_GROUPS = [
       { label: 'Terms & Conditions', to: paths.terms },
     ],
   },
-  {
-    heading: 'Pages',
-    links: [
-      { label: 'Home', to: '/' },
-      { label: 'How it Works', to: paths.howItWorks },
-      { label: 'Reviews', to: paths.reviews },
-      { label: 'Events', to: paths.events },
-    ],
-  },
-  {
-    heading: 'Account',
-    links: [
-      { label: 'Sign in', to: paths.auth.jwt.signIn },
-      { label: 'Sign up', to: paths.auth.jwt.signUp },
-    ],
-  },
-  {
-    heading: 'Company',
-    links: [
-      { label: 'About Us', to: paths.about },
-      { label: 'FAQ', to: paths.faqs },
-      { label: 'Contact Us', to: paths.contact },
-    ],
-  },
+];
+
+const SOCIAL_LINKS = [
+  { label: 'Instagram', icon: 'ri:instagram-line', href: 'https://www.instagram.com/' },
+  { label: 'Facebook', icon: 'ri:facebook-fill', href: 'https://www.facebook.com/' },
+  { label: 'TikTok', icon: 'ri:tiktok-fill', href: 'https://www.tiktok.com/' },
+  { label: 'X', icon: 'ri:twitter-x-fill', href: 'https://x.com/' },
+];
+
+const GUEST_ACCOUNT_LINKS = [
+  { label: 'Sign in', to: paths.auth.jwt.signIn },
+  { label: 'Sign up', to: paths.auth.jwt.signUp },
 ];
 
 export default function LandingFooter() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
-  const [email, setEmail] = useState('');
+
+  const { user } = useSelector((state) => state.user);
+  const userType = user?.accountState?.userType;
+  const isAdminUser = userType === 'admin' || userType === 'subadmin';
+
+  const accountLinks = user
+    ? [
+        { label: 'Dashboard', to: isAdminUser ? paths.adminDashboard.root : paths.dashboard.root },
+        { label: 'My Profile', to: isAdminUser ? paths.adminDashboard.profile : paths.dashboard.profile },
+      ]
+    : GUEST_ACCOUNT_LINKS;
+
+  const linkGroups = [...STATIC_LINK_GROUPS, { heading: 'Account', links: accountLinks }];
 
   return (
-    <Box sx={{ bgcolor: brand.ink[900], pt: 6, pb: 3 }}>
+    <Box sx={{ bgcolor: brand.ink[900], pt: { xs: 6, md: 8 }, pb: 3 }}>
       <Container maxWidth={false} sx={{ px: { xs: 3, md: 6 } }}>
         <Grid container spacing={5}>
 
-          {/* Left — logo + description + newsletter */}
+          {/* Left — logo + description + social links */}
           <Grid item xs={12} md={4}>
             <Box
               onClick={() => navigate('/')}
@@ -66,78 +83,52 @@ export default function LandingFooter() {
 
             <Typography
               variant="body2"
-              sx={{ color: '#fff', lineHeight: 1.8, mb: 4, maxWidth: 300 }}
+              sx={{ color: alpha('#fff', 0.72), lineHeight: 1.8, mb: 4, maxWidth: 300 }}
             >
               We connect clients with top-rated beauty and hair professionals. Book with confidence,
               anytime, anywhere.
             </Typography>
 
-            <Typography variant="subtitle2" sx={{ color: '#fff', fontWeight: 700, mb: 1.5 }}>
-              Stay in the loop
-            </Typography>
-
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                borderRadius: 50,
-                border: `1px solid ${alpha('#fff', 0.15)}`,
-                bgcolor: alpha('#fff', 0.06),
-                px: 2,
-                py: 0.5,
-                maxWidth: 340,
-              }}
-            >
-              <InputBase
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                sx={{
-                  flex: 1,
-                  color: '#fff',
-                  fontSize: '0.875rem',
-                  '& input::placeholder': { color: alpha('#fff', 0.35) },
-                }}
-              />
-              <Box
-                component="button"
-                type="button"
-                onClick={() => setEmail('')}
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.75,
-                  px: 2,
-                  py: 0.9,
-                  border: 'none',
-                  borderRadius: 50,
-                  bgcolor: brand.green[400],
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: brand.green[600] },
-                }}
-              >
-                <Iconify icon="mingcute:send-fill" width={14} />
-                Subscribe
-              </Box>
-            </Box>
+            <Stack direction="row" spacing={1.25}>
+              {SOCIAL_LINKS.map((social) => (
+                <Box
+                  key={social.label}
+                  component="a"
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: alpha('#fff', 0.82),
+                    border: `1px solid ${alpha('#fff', 0.18)}`,
+                    transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+                    '&:hover': { color: '#fff', bgcolor: brand.green[400], borderColor: brand.green[400] },
+                  }}
+                >
+                  <Iconify icon={social.icon} width={18} />
+                </Box>
+              ))}
+            </Stack>
           </Grid>
 
           {/* Right — grouped link sections */}
-          {LINK_GROUPS.map((group) => (
+          {linkGroups.map((group) => (
             <Grid item xs={6} sm={4} md key={group.heading}>
               <Typography
                 variant="overline"
                 sx={{
                   display: 'block',
-                  color: '#fff',
-                  letterSpacing: '0.1em',
+                  color: brand.green[400],
+                  letterSpacing: '0.2em',
+                  fontSize: '0.72rem',
                   fontWeight: 700,
-                  mb: 2,
+                  mb: 2.5,
                 }}
               >
                 {group.heading}
@@ -150,11 +141,11 @@ export default function LandingFooter() {
                     variant="body2"
                     onClick={() => navigate(link.to)}
                     sx={{
-                      color: '#fff',
+                      color: alpha('#fff', 0.82),
                       cursor: 'pointer',
                       transition: 'color 0.2s',
                       width: 'fit-content',
-                      '&:hover': { color: brand.green[200], textDecoration: 'underline' },
+                      '&:hover': { color: brand.green[200], textDecoration: 'underline', textUnderlineOffset: 3 },
                     }}
                   >
                     {link.label}
@@ -166,11 +157,11 @@ export default function LandingFooter() {
 
         </Grid>
 
-        <Divider sx={{ mt: 5, mb: 3, borderColor: alpha('#fff', 0.1) }} />
+        <Divider sx={{ mt: { xs: 5, md: 7 }, mb: 3, borderColor: alpha('#fff', 0.1) }} />
 
         <Typography
           variant="caption"
-          sx={{ display: 'block', textAlign: 'center', color: '#fff' }}
+          sx={{ display: 'block', textAlign: 'center', color: alpha('#fff', 0.6) }}
         >
           {`© ${currentYear} UpNext. All rights reserved.`}
         </Typography>

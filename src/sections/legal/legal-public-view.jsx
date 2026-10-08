@@ -1,56 +1,37 @@
 import { m } from 'framer-motion';
-import { Box, Container, Skeleton, Stack, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, Skeleton, Stack, Typography } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { brand } from 'src/sections/home/landing/theme';
-import SurfaceCard from 'src/sections/home/landing/SurfaceCard';
+import PageHero from 'src/sections/home/landing/PageHero';
 
-export default function LegalPublicView({ title, html, loading = false }) {
+const HEADING_FONT = "'Playfair Display', Georgia, 'Times New Roman', serif";
+
+const contentPadding = {
+  maxWidth: 1120,
+  mx: 'auto',
+  px: { xs: 3, sm: 5, md: 8 },
+  py: { xs: 6, md: 10 },
+};
+
+export default function LegalPublicView({ eyebrow = 'Legal', title, subtitle, html, loading = false }) {
   const theme = useTheme();
 
   return (
-    <Container maxWidth={false} sx={{ pt: { xs: 10, md: 12 }, pb: { xs: 6, md: 10 }, px: { xs: 2, md: 4 } }}>
-      <SurfaceCard
-        sx={{
-          borderRadius: 3,
-          backgroundColor: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          backdropFilter: 'blur(4px)',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Hero */}
+    <Box sx={{ pt: { xs: '64px', md: '66px' }, minHeight: '70vh', bgcolor: 'background.paper' }}>
+      <Box>
         <Box component={MotionViewport}>
           <m.div variants={varFade({ distance: 24 }).inDown}>
-            <Box
-              sx={{
-                px: { xs: 3, sm: 4, md: 6 },
-                py: { xs: 4, md: 6 },
-                background: `linear-gradient(145deg, ${brand.ink[900]} 0%, ${brand.green[900]} 52%, ${brand.green[800]} 100%)`,
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 900,
-                  color: '#fff',
-                  lineHeight: 1.1,
-                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
-                }}
-              >
-                {title}
-              </Typography>
-            </Box>
+            <PageHero eyebrow={eyebrow} title={title} subtitle={subtitle} />
           </m.div>
         </Box>
 
-        {/* Content */}
         <Box>
           {loading ? (
-            <Stack spacing={1.5} sx={{ px: { xs: 3, sm: 4, md: 6 }, py: { xs: 4, md: 5 } }}>
-              {Array.from({ length: 6 }).map((_, index) => (
+            <Stack spacing={1.5} sx={{ ...contentPadding, minHeight: '100vh' }}>
+              {Array.from({ length: 8 }).map((_, index) => (
                 <Skeleton key={index} variant="text" height={24} width={index % 3 === 2 ? '60%' : '100%'} />
               ))}
             </Stack>
@@ -58,46 +39,47 @@ export default function LegalPublicView({ title, html, loading = false }) {
             <Box
               dangerouslySetInnerHTML={{ __html: html }}
               sx={{
-                px: { xs: 3, sm: 4, md: 6 },
-                py: { xs: 4, md: 5 },
+                ...contentPadding,
+                fontSize: '1rem',
+                lineHeight: 1.85,
+                color: theme.palette.text.secondary,
                 '& h1, & h2, & h3, & h4, & h5, & h6': {
-                  fontFamily: theme.typography.fontFamily,
+                  fontFamily: HEADING_FONT,
                   fontWeight: 700,
+                  lineHeight: 1.3,
+                  letterSpacing: '-0.01em',
+                  mt: 5,
                   mb: 1.5,
-                  mt: 3,
                   color: theme.palette.text.primary,
                 },
-                '& h1:first-of-type, & h2:first-of-type, & h3:first-of-type': { mt: 0 },
-                '& p': {
-                  fontFamily: theme.typography.fontFamily,
-                  fontSize: theme.typography.body2.fontSize,
-                  lineHeight: 1.9,
-                  color: theme.palette.text.secondary,
-                  mb: 1.5,
-                },
-                '& ul, & ol': {
-                  pl: 3,
-                  mb: 1.5,
-                  color: theme.palette.text.secondary,
-                  fontSize: theme.typography.body2.fontSize,
-                  lineHeight: 1.9,
-                },
+                '& h1': { fontSize: { xs: '1.6rem', md: '1.9rem' } },
+                '& h2': { fontSize: { xs: '1.4rem', md: '1.6rem' } },
+                '& h3': { fontSize: { xs: '1.2rem', md: '1.3rem' } },
+                '& h4, & h5, & h6': { fontSize: '1.1rem' },
+                '& > :first-of-type': { mt: 0 },
+                '& p': { fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', color: 'inherit', mb: 2 },
+                '& ul, & ol': { pl: 3, mb: 2, fontSize: 'inherit', lineHeight: 'inherit', color: 'inherit' },
+                '& ul': { listStyleType: 'disc' },
+                '& ol': { listStyleType: 'decimal' },
+                '& li': { mb: 0.75 },
+                '& li::marker': { color: brand.green[400] },
+                '& strong, & b': { color: theme.palette.text.primary, fontWeight: 700 },
                 '& a': {
-                  color: theme.palette.primary.main,
+                  color: brand.green[600],
                   textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                  '&:hover': { color: brand.green[800] },
                 },
+                '& hr': { my: 4, border: 'none', borderTop: `1px solid ${alpha(brand.green[400], 0.25)}` },
               }}
             />
           ) : (
-            <Typography
-              variant="body2"
-              sx={{ px: { xs: 3, sm: 4, md: 6 }, py: { xs: 4, md: 5 }, color: theme.palette.text.secondary }}
-            >
+            <Typography sx={{ ...contentPadding, textAlign: 'center', color: theme.palette.text.secondary }}>
               No content available right now.
             </Typography>
           )}
         </Box>
-      </SurfaceCard>
-    </Container>
+      </Box>
+    </Box>
   );
 }

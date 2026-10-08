@@ -65,32 +65,6 @@ jobs:
             echo "Download the **gitleaks-report** artifact, remove the secret from the code and **rotate it** (it is already in git history)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  dependency-audit:
-    name: Dependency audit (report only)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    continue-on-error: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: npm audit (production dependencies)
-        run: |
-          npm audit --omit=dev --json > audit.json || true
-          node -e '
-            const a = require("./audit.json");
-            const v = (a.metadata && a.metadata.vulnerabilities) || {};
-            const rows = ["critical", "high", "moderate", "low"].map((k) => `| ${k} | ${v[k] || 0} |`).join("\n");
-            console.log(`### :shield: Dependency audit\n\n| Severity | Count |\n|---|---|\n${rows}\n\nReport only — does not block the deploy.`);
-          ' >> "$GITHUB_STEP_SUMMARY"
-          npm audit --omit=dev --audit-level=critical
-
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -206,12 +206,12 @@ export const WHY_UPNEXT = [
   {
     title: 'Vetted Professionals',
     text: 'Every stylist is background-checked and reviewed by real clients before joining the platform.',
-    icon: 'mingcute:safe-shield-line',
+    icon: 'solar:shield-check-bold',
   },
   {
     title: 'Easy Online Booking',
     text: 'A clean, fast booking flow with upfront pricing — no surprise fees, ever.',
-    icon: 'mingcute:calendar-line',
+    icon: 'solar:calendar-mark-bold',
   },
   {
     title: 'Secure Payments',

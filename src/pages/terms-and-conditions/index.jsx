@@ -4,7 +4,7 @@ import { CONFIG } from 'src/config-global';
 
 import TermsView from 'src/sections/terms-and-conditions/view/terms-view';
 
-const metadata = { title: `Terms & Conditions - ${CONFIG.site.name}` };
+const metadata = { title: `Terms & Conditions | ${CONFIG.site.brand}` };
 
 export default function Page() {
   return (

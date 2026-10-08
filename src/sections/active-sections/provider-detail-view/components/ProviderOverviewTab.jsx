@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import { varAlpha } from 'src/theme/styles';
 import { useGetReviewsQuery } from 'src/store/Reducer/services-api';
-import { useGetBusinessReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
+import { useGetAdminReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
 import { normalizeReviewStats } from 'src/utils/reviews';
 import { formatSlotTime12h } from 'src/utils/schedule-format';
 import ServiceCard from '../../services-view/components/service-card-main';
@@ -126,8 +126,8 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
     { scope: 'business', targetId: reviewsTargetId, page: 1, limit: 1 },
     { skip: !reviewsTargetId || isAdminRoute || isPublicView }
   );
-  const adminStatsResult = useGetBusinessReviewsQuery(
-    { businessId: reviewsTargetId, page: 1, limit: 1 },
+  const adminStatsResult = useGetAdminReviewsQuery(
+    { scope: 'business', targetId: reviewsTargetId, status: 'approved', page: 1, limit: 1 },
     { skip: !reviewsTargetId || !isAdminRoute }
   );
   const publicStatsResult = useGetBusinessReviewsPublicQuery(
@@ -135,7 +135,13 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
     { skip: !reviewsTargetId || !isPublicView }
   );
   const { data: reviewStatsData } = isAdminRoute ? adminStatsResult : isPublicView ? publicStatsResult : genericStatsResult;
-  const reviewStats = normalizeReviewStats(reviewStatsData?.data?.stats, []);
+  const reviewStats = normalizeReviewStats(isAdminRoute ? reviewStatsData?.meta?.stats : reviewStatsData?.data?.stats, []);
+  const publishedReviews = Number(provider.reviewCount) || 0;
+  const ratingValue = Number(provider.rating) || 0;
+  const ratingBars = provider.ratingCount
+    ? [5, 4, 3, 2, 1].map((star) => ({ star, count: Number(provider.ratingCount[star]) || 0 }))
+    : reviewStats.ratingCounts;
+  const reviewTotal = ratingBars.reduce((sum, item) => sum + item.count, 0);
 
   const handleViewService = (service) => {
     const serviceId = service?._id || service?.id;
@@ -366,15 +372,15 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             <Typography variant="subtitle1" fontWeight={700}>{t('rating')}</Typography>
           </Stack>
 
-          {provider.rating ? (
+          {ratingValue > 0 ? (
             <>
               <Stack direction="row" alignItems="baseline" spacing={1} sx={{ mb: 1 }}>
-                <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary' }}>{Number(provider.rating).toFixed(1)}</Typography>
+                <Typography variant="h3" fontWeight={800} sx={{ color: 'text.primary' }}>{ratingValue.toFixed(1)}</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>/ 5</Typography>
               </Stack>
-              <StarRating rating={provider.rating} />
+              <StarRating rating={ratingValue} />
               <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.75, display: 'block' }}>
-                {t('basedOnReviews', { count: provider.reviewCount ?? 0 })}
+                {t('basedOnReviews', { count: publishedReviews })}
               </Typography>
             </>
           ) : (
@@ -384,10 +390,9 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             </Stack>
           )}
 
-          <Stack spacing={0.75} sx={{ mt: 2 }}>
-            {reviewStats.ratingCounts.map(({ star, count }) => {
-              const total = reviewStats.totalReviews || provider.reviewCount || 0;
-              const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+          <Stack spacing={0.75} sx={{ mt: ratingBars.length ? 2 : 0 }}>
+            {ratingBars.map(({ star, count }) => {
+              const pct = reviewTotal > 0 ? Math.round((count / reviewTotal) * 100) : 0;
               return (
                 <Stack key={star} direction="row" alignItems="center" spacing={1}>
                   <Typography variant="caption" sx={{ width: 8, color: 'text.secondary' }}>{star}</Typography>
@@ -456,7 +461,7 @@ export default function ProviderOverviewTab({ provider, onShowAllServices, isPub
             )}
           </Stack>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 3 }}>
             {previewServices.length ? (
               previewServices.map((service) => (
                 <Fragment key={service._id || service.id}>

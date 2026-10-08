@@ -1,10 +1,13 @@
 import { forwardRef } from 'react';
-import { Icon, disableCache } from '@iconify/react';
+import { Icon, addCollection, disableCache } from '@iconify/react';
 
 import Box from '@mui/material/Box';
 import NoSsr from '@mui/material/NoSsr';
 
 import { iconifyClasses } from './classes';
+import iconSets from './icon-sets.json';
+
+iconSets.forEach((collection) => addCollection(collection));
 
 // ----------------------------------------------------------------------
 

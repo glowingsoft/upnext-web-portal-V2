@@ -57,12 +57,21 @@ function StatCell({ stat, isLast }) {
     <Box
       ref={ref}
       sx={{
-        py: 2,
+        py: 2.5,
         textAlign: 'center',
-        borderRight: !isLast ? (theme) => `1px solid ${theme.palette.divider}` : 'none',
+        borderRight: !isLast ? `1px solid ${alpha(brand.green[400], 0.18)}` : 'none',
       }}
     >
-      <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', lineHeight: 1, color: brand.green[600] }}>
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          lineHeight: 1,
+          color: brand.green[600],
+          fontVariantNumeric: 'lining-nums',
+          fontSize: { xs: '1.6rem', sm: '1.6rem', md: '1.6rem', lg: '1.75rem' },
+        }}
+      >
         {display}{stat.suffix}
       </Typography>
       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
@@ -74,12 +83,61 @@ function StatCell({ stat, isLast }) {
 
 function ReviewItem({ item }) {
   return (
-    <SurfaceCard sx={{ p: 2.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.25 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        p: { xs: 2.5, md: 3.5 },
+        borderRadius: 3,
+        bgcolor: 'background.paper',
+        border: `1px solid ${alpha(brand.green[400], 0.2)}`,
+        transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
+        '&:hover': {
+          borderColor: alpha(brand.green[400], 0.5),
+          boxShadow: `0 24px 48px -28px ${alpha(brand.green[800], 0.35)}`,
+        },
+      }}
+    >
+      <Typography
+        aria-hidden
+        variant="h1"
+        sx={{
+          position: 'absolute',
+          top: { xs: -6, md: -10 },
+          right: { xs: 16, md: 28 },
+          fontWeight: 700,
+          lineHeight: 1,
+          fontSize: { xs: '5rem', sm: '5rem', md: '7rem', lg: '7rem' },
+          color: alpha(brand.green[400], 0.16),
+          userSelect: 'none',
+        }}
+      >
+        &rdquo;
+      </Typography>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.35, mb: 1.75 }}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Iconify key={index} icon="mingcute:star-fill" width={16} sx={{ color: '#F59E0B' }} />
+        ))}
+      </Box>
+
+      <Typography sx={{ mb: 2.5, maxWidth: 640, color: 'text.primary', lineHeight: 1.8, fontSize: { xs: '0.95rem', md: '1.05rem' } }}>
+        {item.text}
+      </Typography>
+
+      <Box
+        sx={{
+          pt: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          borderTop: `1px solid ${alpha(brand.green[400], 0.18)}`,
+        }}
+      >
         <Avatar
           sx={{
-            width: 38,
-            height: 38,
+            width: 42,
+            height: 42,
             flexShrink: 0,
             bgcolor: alpha(brand.green[400], 0.14),
             color: brand.green[600],
@@ -89,60 +147,42 @@ function ReviewItem({ item }) {
           {item.name[0]}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {item.name}
-            </Typography>
-            <Box
-              sx={{
-                px: 1.25,
-                py: 0.3,
-                borderRadius: 99,
-                bgcolor: alpha(brand.green[400], 0.1),
-                border: `1px solid ${alpha(brand.green[400], 0.25)}`,
-                flexShrink: 0,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 700, color: brand.green[600], fontSize: '0.67rem', letterSpacing: '0.05em' }}
-              >
-                APPROVED
-              </Typography>
-            </Box>
-          </Box>
-          <Typography variant="caption" color="text.secondary">
+          <Typography noWrap sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.4 }}>
+            {item.name}
+          </Typography>
+          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1.4 }}>
             {item.city}
+            {item.date ? ` · ${item.date}` : ''}
           </Typography>
         </Box>
+        <Box
+          sx={{
+            px: 1.25,
+            py: 0.4,
+            borderRadius: 99,
+            flexShrink: 0,
+            fontSize: '0.67rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            color: brand.green[600],
+            bgcolor: alpha(brand.green[400], 0.1),
+            border: `1px solid ${alpha(brand.green[400], 0.25)}`,
+          }}
+        >
+          APPROVED
+        </Box>
       </Box>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, mb: 1 }}>
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Iconify key={index} icon="mingcute:star-fill" width={13} sx={{ color: '#F59E0B' }} />
-        ))}
-      </Box>
-
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.7 }}>
-        {item.text}
-      </Typography>
-      <Typography variant="caption" color="text.disabled">
-        {item.date}
-      </Typography>
-    </SurfaceCard>
+    </Box>
   );
 }
 
 export default function ReviewsAndWhySection({ onJoinAsProvider }) {
   return (
-    <Grid id="reviews" container spacing={2} sx={{ mt: 0.5, pb: 2, px: { xs: 2, md: 3 }, scrollMarginTop: '92px' }}>
+    <Grid id="reviews" container spacing={3} sx={{ mt: 0, px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 5, md: 8 }, scrollMarginTop: '92px' }}>
 
       {/* Left — Reviews */}
       <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1.5, color: brand.green[600], flexShrink: 0 }}>
-          Customer Reviews
-        </Typography>
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 1.5 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: { xs: 2.5, md: 3 } }}>
           {CUSTOMER_REVIEWS.map((item) => (
             <ReviewItem key={item.name} item={item} />
           ))}
@@ -151,10 +191,16 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
 
       {/* Right — Become a Stylist */}
       <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1.5, flexShrink: 0 }}>
-          &nbsp;
-        </Typography>
-        <SurfaceCard sx={{ overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <SurfaceCard
+          sx={{
+            overflow: 'hidden',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 3,
+            border: `1px solid ${alpha(brand.green[400], 0.2)}`,
+          }}
+        >
 
           {/* Illustrated top section */}
           <Box
@@ -202,7 +248,7 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
             {[
               { top: '18%', left: '18%', size: 16 },
               { top: '22%', right: '20%', size: 12 },
-              { bottom: '25%', right: '14%', size: 14 },
+              { bottom: '8%', right: '8%', size: 14 },
             ].map((pos, i) => (
               <Box
                 key={i}
@@ -217,10 +263,20 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
               </Box>
             ))}
 
-            <Typography variant="h6" sx={{ position: 'relative', zIndex: 1, fontWeight: 800, color: '#fff', textAlign: 'center' }}>
+            <Typography
+              variant="h4"
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                fontWeight: 700,
+                color: '#fff',
+                textAlign: 'center',
+                fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.5rem', lg: '1.6rem' },
+              }}
+            >
               Grow with UpNext
             </Typography>
-            <Typography variant="caption" sx={{ position: 'relative', zIndex: 1, color: alpha('#fff', 0.6), textAlign: 'center', mt: 0.5 }}>
+            <Typography sx={{ position: 'relative', zIndex: 1, color: alpha('#fff', 0.7), textAlign: 'center', mt: 0.75, fontSize: '0.85rem' }}>
               Join thousands of professionals already on the platform
             </Typography>
           </Box>
@@ -230,7 +286,7 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
             sx={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+              borderBottom: `1px solid ${alpha(brand.green[400], 0.18)}`,
               flexShrink: 0,
             }}
           >
@@ -240,11 +296,11 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
           </Box>
 
           {/* CTA content */}
-          <Box sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>
+          <Box sx={{ p: { xs: 2.5, md: 3.5 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '1.4rem', sm: '1.4rem', md: '1.4rem', lg: '1.5rem' } }}>
               Become a Stylist
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.7 }}>
+            <Typography color="text.secondary" sx={{ mb: 3, lineHeight: 1.8, fontSize: '0.95rem' }}>
               Set your own hours, build your client base, and get paid securely — all in one place.
             </Typography>
             <Box
@@ -257,8 +313,8 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 0.75,
-                px: 3.25,
-                py: 1.25,
+                px: 3.5,
+                py: 1.6,
                 borderRadius: 999,
                 border: 'none',
                 cursor: 'pointer',
@@ -266,15 +322,16 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
                 backgroundColor: brand.green[400],
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '0.9rem',
-                boxShadow: `0 4px 14px ${alpha(brand.green[400], 0.35)}`,
+                fontSize: '0.95rem',
+                boxShadow: `0 8px 20px ${alpha(brand.green[400], 0.35)}`,
+                transition: 'background-color 0.18s ease',
                 '&:hover': { backgroundColor: brand.green[600] },
               }}
             >
               Join as Stylist
             </Box>
 
-            <Box sx={{ mt: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 1.5 }}>
+            <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column' }}>
               {[
                 { icon: 'solar:lock-bold', title: 'Secure Payments', desc: 'Every transaction is protected end-to-end' },
                 { icon: 'solar:calendar-mark-bold', title: 'Flexible Schedule', desc: 'Set your own hours and manage availability from anywhere' },
@@ -283,11 +340,8 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
                 <Box
                   key={feat.title}
                   sx={{
-                    px: 2.5,
                     py: 2,
-                    borderRadius: 2,
-                    bgcolor: alpha(brand.green[400], 0.08),
-                    border: `1px solid ${alpha(brand.green[400], 0.22)}`,
+                    borderTop: `1px solid ${alpha(brand.green[400], 0.18)}`,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.75,
@@ -308,10 +362,10 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
                     <Iconify icon={feat.icon} width={22} sx={{ color: brand.green[600] }} />
                   </Box>
                   <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: brand.green[600], display: 'block', lineHeight: 1.3 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: 'text.primary', lineHeight: 1.3 }}>
                       {feat.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, mt: 0.25 }}>
+                    <Typography color="text.secondary" sx={{ lineHeight: 1.5, mt: 0.25, fontSize: '0.85rem' }}>
                       {feat.desc}
                     </Typography>
                   </Box>

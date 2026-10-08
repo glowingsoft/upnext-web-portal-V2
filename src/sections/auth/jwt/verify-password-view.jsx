@@ -14,12 +14,15 @@ import { useVerifyOtpEmailMutation, useResendOtpEmailMutation } from 'src/store/
 import { getPasswordResetEmail, setPasswordResetToken } from './password-reset-flow-storage';
 import { JwtOtpCodeFields } from './jwt-otp-code-fields';
 import { OtpVerifySchema } from './otp-verify-schema';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 export { OtpVerifySchema } from './otp-verify-schema';
 
 // ----------------------------------------------------------------------
 
 export function JwtVerifyPasswordView() {
+  usePublicFonts();
   const router = useRouter();
   const email = getPasswordResetEmail() || '';
   const [errorMsg, setErrorMsg] = useState('');
@@ -77,8 +80,10 @@ export function JwtVerifyPasswordView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 5 }}>
-        <Typography variant="h5">Verify OTP</Typography>
+      <Stack spacing={1.5} sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Verify OTP
+        </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Please enter the One-Time Password (OTP) sent to{email ? ` ${email}` : ' your email'} to continue.
         </Typography>
@@ -112,7 +117,7 @@ export function JwtVerifyPasswordView() {
       ) : null}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={authFieldSx}>
           <Box>
             <JwtOtpCodeFields control={control} />
 
