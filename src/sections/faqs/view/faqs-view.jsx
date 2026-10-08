@@ -6,7 +6,6 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
-  Container,
   Skeleton,
   Stack,
   Typography,
@@ -20,7 +19,7 @@ import { useGetFaqsQuery } from 'src/store/Reducer/settings-api';
 import { getApiLanguage, getMultiLangValue } from 'src/utils/multi-lang-content';
 
 import { brand } from 'src/sections/home/landing/theme';
-import SurfaceCard from 'src/sections/home/landing/SurfaceCard';
+import PageHero from 'src/sections/home/landing/PageHero';
 
 // Public marketing page — a single page of FAQs is plenty, no pager needed.
 const FAQS_LIMIT = 50;
@@ -45,52 +44,27 @@ export function FaqsView() {
   };
 
   return (
-    <Container maxWidth={false} sx={{ pt: { xs: 10, md: 12 }, pb: { xs: 6, md: 10 }, px: { xs: 2, md: 4 } }}>
-      <SurfaceCard
-        sx={{
-          borderRadius: 3,
-          backgroundColor: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          backdropFilter: 'blur(4px)',
-          overflow: 'hidden',
-        }}
-      >
+    <Box sx={{ pt: { xs: '64px', md: '66px' }, minHeight: '70vh', bgcolor: 'background.paper' }}>
+      <Box>
         {/* Hero */}
         <Box component={MotionViewport}>
           <m.div variants={varFade({ distance: 24 }).inDown}>
-            <Box
-              sx={{
-                px: { xs: 3, sm: 4, md: 6 },
-                py: { xs: 4, md: 6 },
-                background: `linear-gradient(145deg, ${brand.ink[900]} 0%, ${brand.green[900]} 52%, ${brand.green[800]} 100%)`,
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 900,
-                  color: '#fff',
-                  lineHeight: 1.1,
-                  fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
-                }}
-              >
-                Frequently Asked Questions
-              </Typography>
-              <Typography variant="body2" sx={{ color: alpha('#fff', 0.6), mt: 1.5, maxWidth: 700 }}>
-                Everything you need to know about UpNext. Can&apos;t find the answer? Reach out via our Contact page.
-              </Typography>
-            </Box>
+            <PageHero
+              eyebrow="Support"
+              title="Frequently Asked Questions"
+              subtitle="Everything you need to know about UpNext. Can't find the answer? Reach out via our Contact page."
+            />
           </m.div>
         </Box>
 
         {/* Accordion list */}
         <Box component={MotionViewport}>
           <m.div variants={varFade({ distance: 24 }).inUp}>
-            <Box sx={{ px: { xs: 3, sm: 4, md: 6 }, py: { xs: 4, md: 6 } }}>
+            <Box sx={{ maxWidth: 1040, mx: 'auto', px: { xs: 2.5, sm: 5, md: 8 }, py: { xs: 6, md: 10 } }}>
               {loading ? (
                 <Stack spacing={1.5}>
                   {Array.from({ length: 6 }).map((_, index) => (
-                    <Skeleton key={index} variant="rounded" height={56} sx={{ borderRadius: '10px' }} />
+                    <Skeleton key={index} variant="rounded" height={68} sx={{ borderRadius: '12px' }} />
                   ))}
                 </Stack>
               ) : faqs.length === 0 ? (
@@ -111,43 +85,60 @@ export function FaqsView() {
                       disableGutters
                       elevation={0}
                       sx={{
-                        mb: 1.5,
-                        border: `1px solid ${theme.palette.divider}`,
-                        borderRadius: '10px !important',
+                        mb: 2,
+                        border: `1px solid ${alpha(brand.green[400], 0.2)}`,
+                        borderRadius: '12px !important',
+                        transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
                         '&:before': { display: 'none' },
+                        '&:hover': { borderColor: alpha(brand.green[400], 0.5) },
                         '&.Mui-expanded': {
-                          borderColor: alpha(brand.green[400], 0.4),
+                          borderColor: alpha(brand.green[400], 0.5),
+                          boxShadow: `0 24px 48px -28px ${alpha(brand.green[800], 0.35)}`,
                         },
                       }}
                     >
                       <AccordionSummary
                         expandIcon={
-                          <Iconify
-                            icon="mingcute:down-line"
-                            width={18}
-                            sx={{ color: expanded === itemId ? brand.green[400] : theme.palette.text.secondary }}
-                          />
+                          <Box
+                            sx={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: `1px solid ${alpha(brand.green[400], 0.5)}`,
+                              color: expanded === itemId ? '#fff' : brand.green[600],
+                              bgcolor: expanded === itemId ? brand.green[400] : 'transparent',
+                              transition: 'background-color 0.25s ease, color 0.25s ease',
+                            }}
+                          >
+                            <Iconify icon="mingcute:down-line" width={18} />
+                          </Box>
                         }
                         sx={{
-                          px: { xs: 2, md: 3 },
-                          py: 1,
-                          minHeight: 56,
+                          px: { xs: 2.5, md: 3.5 },
+                          py: 1.5,
+                          minHeight: 68,
+                          gap: 2,
                           '& .MuiAccordionSummary-content': { my: 0 },
                         }}
                       >
                         <Typography
-                          variant="subtitle1"
+                          variant="h4"
                           sx={{
-                            fontWeight: 600,
-                            color: expanded === itemId ? brand.green[400] : theme.palette.text.primary,
+                            fontWeight: 700,
+                            lineHeight: 1.4,
+                            fontSize: { xs: '1.05rem', sm: '1.05rem', md: '1.15rem', lg: '1.15rem' },
+                            color: expanded === itemId ? brand.green[600] : theme.palette.text.primary,
                             transition: 'color 0.2s',
                           }}
                         >
                           {question}
                         </Typography>
                       </AccordionSummary>
-                      <AccordionDetails sx={{ px: { xs: 2, md: 3 }, pt: 0, pb: 2.5 }}>
-                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.9 }}>
+                      <AccordionDetails sx={{ px: { xs: 2.5, md: 3.5 }, pt: 0, pb: 3 }}>
+                        <Typography sx={{ maxWidth: 680, color: theme.palette.text.secondary, lineHeight: 1.85, fontSize: '0.975rem' }}>
                           {answer}
                         </Typography>
                       </AccordionDetails>
@@ -158,7 +149,7 @@ export function FaqsView() {
             </Box>
           </m.div>
         </Box>
-      </SurfaceCard>
-    </Container>
+      </Box>
+    </Box>
   );
 }

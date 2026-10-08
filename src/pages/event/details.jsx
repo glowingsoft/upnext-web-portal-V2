@@ -6,7 +6,7 @@ import { EventDetailView } from 'src/sections/event/view/event-detail-view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Event Details - ${CONFIG.site.name}` };
+const metadata = { title: `Event Details | ${CONFIG.site.brand}` };
 
 export default function Page() {
   return (

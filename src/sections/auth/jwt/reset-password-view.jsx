@@ -16,9 +16,11 @@ import { Field, Form } from 'src/components/hook-form';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { useBoolean } from 'src/hooks/use-boolean';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 import { useResetPasswordMutation } from 'src/store/Reducer/auth';
 import { getPasswordResetEmail, getPasswordResetToken, getPasswordResetSource, clearPasswordResetStorage } from './password-reset-flow-storage';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
 
 // ----------------------------------------------------------------------
 
@@ -35,6 +37,7 @@ const ResetPasswordSchema = zod
 // ----------------------------------------------------------------------
 
 export function JwtResetPasswordView() {
+  usePublicFonts();
   const router = useRouter();
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -72,8 +75,10 @@ export function JwtResetPasswordView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 5 }}>
-        <Typography variant="h5">Reset your password</Typography>
+      <Stack spacing={1.5} sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Reset your password
+        </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Please enter your new password and confirm it below.
         </Typography>
@@ -86,7 +91,7 @@ export function JwtResetPasswordView() {
       ) : null}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={authFieldSx}>
           <Field.Text
             name="newPassword"
             label="New Password"

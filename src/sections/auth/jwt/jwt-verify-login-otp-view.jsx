@@ -16,12 +16,15 @@ import { setUser } from 'src/store/slices/userSlice';
 
 import { JwtOtpCodeFields } from './jwt-otp-code-fields';
 import { OtpVerifySchema } from './otp-verify-schema';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 import { goToPostLogin } from './auth-redirect-storage';
 import { getFcmToken } from 'src/lib/firebase-messaging';
 
 // ----------------------------------------------------------------------
 
 export function JwtVerifyLoginOtpView() {
+  usePublicFonts();
   const router = useRouter();
   const dispatch = useDispatch();
   const email = sessionStorage.getItem('login_2fa_email') || '';
@@ -75,8 +78,10 @@ export function JwtVerifyLoginOtpView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 5 }}>
-        <Typography variant="h5">Two-factor verification</Typography>
+      <Stack spacing={1.5} sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Two-factor verification
+        </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Enter the One-Time Password (OTP) sent to{email ? ` ${email}` : ' your email'} to finish signing in.
         </Typography>
@@ -104,7 +109,7 @@ export function JwtVerifyLoginOtpView() {
       )}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={3}>
+        <Stack spacing={3} sx={authFieldSx}>
           <JwtOtpCodeFields control={control} />
 
           <LoadingButton

@@ -6,7 +6,7 @@ import { View403 } from 'src/sections/error';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `403 forbidden! | Error - ${CONFIG.site.name}` };
+const metadata = { title: `No access | ${CONFIG.site.brand}` };
 
 export default function Page() {
   return (

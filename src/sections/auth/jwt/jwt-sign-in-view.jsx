@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 import { Field, Form } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
@@ -25,6 +26,7 @@ import { Iconify } from 'src/components/iconify';
 import { useDispatch } from 'react-redux';
 import { setPasswordResetSource } from './password-reset-flow-storage';
 import { goToPostLogin } from './auth-redirect-storage';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
 import { useLoginMutation } from 'src/store/Reducer/auth';
 import { setUser } from 'src/store/slices/userSlice';
 import { getFcmToken } from 'src/lib/firebase-messaging';
@@ -39,6 +41,7 @@ export const SignInSchema = zod.object({
 // ----------------------------------------------------------------------
 
 export function JwtSignInView() {
+  usePublicFonts();
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
@@ -129,8 +132,10 @@ export function JwtSignInView() {
   });
 
   const renderHead = (
-    <Stack spacing={1.5} sx={{ mb: 5 }}>
-      <Typography variant="h5">Sign in to your account</Typography>
+    <Stack spacing={1.5} sx={{ mb: 4 }}>
+      <Typography variant="h4" sx={authHeadingSx}>
+        Sign in to your account
+      </Typography>
 
       <Stack direction="row" spacing={0.5}>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -145,7 +150,7 @@ export function JwtSignInView() {
   );
 
   const renderForm = (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={authFieldSx}>
       <ToggleButtonGroup
         exclusive
         fullWidth

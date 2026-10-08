@@ -63,6 +63,7 @@ export function BadgeMultiSelect({ fieldName, badge }) {
                             <TextField
                                 {...params}
                                 label={badgeLabel}
+                                InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
                                 error={!!error}
                                 helperText={error?.message}
                             />

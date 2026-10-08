@@ -23,6 +23,8 @@ import { toast } from 'src/components/snackbar';
 
 import { useSignupMutation, useUploadS3Mutation } from 'src/store/Reducer/auth';
 import { useBoolean } from 'src/hooks/use-boolean';
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
+import { authFieldSx, authHeadingSx } from './auth-form-styles';
 import { saveSignupFlowDraft, setSignupFlowStage, SIGNUP_FLOW_STAGE } from './sign-up/signup-flow-storage';
 import { getFcmToken } from 'src/lib/firebase-messaging';
 
@@ -45,6 +47,7 @@ const SignUpSchema = zod
 // ----------------------------------------------------------------------
 
 export function JwtSignUpView() {
+  usePublicFonts();
   const router = useRouter();
   const [signup] = useSignupMutation();
   const [uploadS3] = useUploadS3Mutation();
@@ -118,7 +121,9 @@ export function JwtSignUpView() {
   return (
     <>
       <Stack spacing={1.5} sx={{ mb: 3 }}>
-        <Typography variant="h5">Create your account</Typography>
+        <Typography variant="h4" sx={authHeadingSx}>
+          Create your account
+        </Typography>
         <Stack direction="row" spacing={0.5}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Already have an account?
@@ -136,7 +141,7 @@ export function JwtSignUpView() {
       )}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={authFieldSx}>
           <ToggleButtonGroup
             exclusive
             fullWidth
@@ -188,6 +193,7 @@ export function JwtSignUpView() {
             name="confirmPassword"
             label="Confirm password"
             type={showConfirmPassword.value ? 'text' : 'password'}
+            InputLabelProps={{ shrink: true }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -211,14 +217,14 @@ export function JwtSignUpView() {
             Create Account
           </LoadingButton>
 
-          <Typography variant="caption" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-            {'By signing up, I agree to '}
-            <Link component={RouterLink} href={paths.terms} variant="caption" color="text.primary" sx={{ fontWeight: 700 }}>
-              Terms of service
+          <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', lineHeight: 1.7 }}>
+            {'By creating an account, you agree to our '}
+            <Link component={RouterLink} href={paths.terms} target="_blank" rel="noopener" variant="body2" sx={{ fontWeight: 700, color: 'primary.main', '&:hover': { color: 'primary.dark' } }}>
+              Terms &amp; Conditions
             </Link>
             {' and '}
-            <Link component={RouterLink} href={paths.privacy} variant="caption" color="text.primary" sx={{ fontWeight: 700 }}>
-              Privacy policy
+            <Link component={RouterLink} href={paths.privacy} target="_blank" rel="noopener" variant="body2" sx={{ fontWeight: 700, color: 'primary.main', '&:hover': { color: 'primary.dark' } }}>
+              Privacy Policy
             </Link>
             .
           </Typography>

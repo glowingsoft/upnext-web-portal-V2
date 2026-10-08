@@ -33,16 +33,17 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: 2,
+          py: 2.5,
           gap: 2,
           cursor: 'pointer',
           userSelect: 'none',
-          '&:hover .svc-name': { color: 'primary.main' },
+          '&:hover .svc-name': { color: brand.green[600] },
+          '&:hover .svc-arrow': { borderColor: brand.green[400] },
         }}
       >
         {/* Left — name + chips */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography className="svc-name" variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75, transition: 'color 0.15s ease' }}>
+          <Typography className="svc-name" sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.4, mb: 1, transition: 'color 0.15s ease' }}>
             {service.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
@@ -51,11 +52,12 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
               label={service.duration}
               size="small"
               sx={{
-                height: 22,
+                height: 24,
                 fontSize: '0.72rem',
                 fontWeight: 600,
-                color: 'text.primary',
-                bgcolor: (t) => alpha(t.palette.text.primary, 0.07),
+                color: brand.green[800],
+                bgcolor: alpha(brand.green[400], 0.06),
+                border: `1px solid ${alpha(brand.green[400], 0.35)}`,
                 pointerEvents: 'none',
                 '& .MuiChip-label': { px: 0.75 },
                 '& .MuiChip-icon': { ml: 0.5, mr: -0.25 },
@@ -66,11 +68,12 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
                 label={service.subCategory}
                 size="small"
                 sx={{
-                  height: 22,
+                  height: 24,
                   fontSize: '0.72rem',
                   fontWeight: 600,
                   color: 'text.secondary',
-                  bgcolor: (t) => alpha(t.palette.text.primary, 0.07),
+                  bgcolor: 'transparent',
+                  border: `1px solid ${alpha(brand.green[400], 0.25)}`,
                   pointerEvents: 'none',
                   '& .MuiChip-label': { px: 0.75 },
                 }}
@@ -81,27 +84,26 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
 
         {/* Right — price + expand arrow */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: brand.green[600], lineHeight: 1 }}>${service.price}</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: '1.15rem', color: 'text.primary', lineHeight: 1 }}>${service.price}</Typography>
           <Box
+            className="svc-arrow"
             sx={{
-              width: 28,
-              height: 28,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              bgcolor: isExpanded ? alpha(brand.green[400], 0.12) : alpha('#000', 0.04),
-              transition: 'background-color 0.18s ease',
+              color: isExpanded ? '#fff' : brand.green[600],
+              bgcolor: isExpanded ? brand.green[400] : 'transparent',
+              border: `1px solid ${isExpanded ? brand.green[400] : alpha(brand.green[400], 0.5)}`,
+              transition: 'background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease',
             }}
           >
             <Iconify
               icon="mingcute:arrow-right-line"
-              width={14}
-              sx={{
-                color: isExpanded ? brand.green[600] : 'text.secondary',
-                transform: isExpanded ? 'rotate(90deg)' : 'none',
-                transition: 'transform 0.2s ease, color 0.15s ease',
-              }}
+              width={16}
+              sx={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s ease' }}
             />
           </Box>
         </Box>
@@ -120,15 +122,7 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
             mb: 2,
           }}
         >
-          {/* Policy grid */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
-              gap: 2,
-              mb: 2,
-            }}
-          >
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 2, mb: 2 }}>
             <PolicyInfo icon="solar:shield-user-bold" label="Service Type" value={service.serviceType || '—'} />
             <PolicyInfo icon="mingcute:calendar-line" label="Availability" value={service.availability || '—'} />
             <PolicyInfo icon="solar:clock-circle-bold" label="Book by" value={service.bookByLabel || '—'} />
@@ -136,37 +130,26 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
             <PolicyInfo icon="solar:wallet-money-bold" label="Refund" value={service.refundPercentage != null ? `${service.refundPercentage}%` : '—'} />
           </Box>
 
-          {/* Refund rule */}
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              color: 'text.secondary',
-              fontStyle: 'italic',
-              mb: 2.5,
-              fontSize: '0.78rem',
-            }}
-          >
+          <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontStyle: 'italic', mb: 2.5, fontSize: '0.78rem' }}>
             {service.refundPercentage != null
               ? `${service.refundPercentage}% refund available depending on cancellation timing.`
               : 'Booking policy details coming soon.'}
           </Typography>
 
-          {/* Book CTA */}
           {showBook && (
             <Box
               component="button"
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={(event) => {
+                event.stopPropagation();
                 onBook();
               }}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.75,
-                px: 3,
-                py: 1,
+                px: 3.5,
+                py: 1.4,
                 borderRadius: 99,
                 border: 'none',
                 cursor: 'pointer',
@@ -174,8 +157,8 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
                 backgroundColor: brand.green[400],
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '0.85rem',
-                boxShadow: `0 3px 10px ${alpha(brand.green[400], 0.3)}`,
+                fontSize: '0.9rem',
+                boxShadow: `0 8px 20px ${alpha(brand.green[400], 0.35)}`,
                 transition: 'background-color 0.18s ease',
                 '&:hover': { backgroundColor: brand.green[600] },
               }}
@@ -187,7 +170,7 @@ export default function ServiceRow({ service, isExpanded, onToggle, onBook, isLa
         </Box>
       </Collapse>
 
-      {!isLast && !isExpanded && <Divider />}
+      {!isLast && !isExpanded && <Divider sx={{ borderColor: alpha(brand.green[400], 0.18) }} />}
     </>
   );
 }

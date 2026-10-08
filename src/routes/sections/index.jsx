@@ -8,8 +8,8 @@ import { CONFIG } from 'src/config-global';
 import { hasComingSoonAccess } from 'src/utils/coming-soon-access';
 import { adminDashboardRoutes } from './admin-dashboard';
 import { authRoutes } from './auth';
-import { authDemoRoutes } from './auth-demo';
-import { componentsRoutes } from './components';
+// import { authDemoRoutes } from './auth-demo';
+// import { componentsRoutes } from './components';
 import { dashboardRoutes } from './dashboard';
 import { mainRoutes } from './main';
 
@@ -78,7 +78,7 @@ export function Router() {
 
     // Auth
     ...authRoutes,
-    ...authDemoRoutes,
+    // ...authDemoRoutes,
 
     // Dashboard
     ...dashboardRoutes,
@@ -90,7 +90,7 @@ export function Router() {
     ...mainRoutes,
 
     // Components
-    ...componentsRoutes,
+    // ...componentsRoutes,
 
     // No match
     { path: '*', element: <Navigate to="/404" replace /> },

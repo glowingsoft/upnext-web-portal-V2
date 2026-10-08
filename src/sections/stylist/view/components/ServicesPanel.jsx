@@ -2,7 +2,6 @@ import { Box, Chip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
 import { Iconify } from 'src/components/iconify';
-import { textGradient } from 'src/theme/styles';
 import { brand } from 'src/sections/home/landing/theme';
 import SurfaceCard from 'src/sections/home/landing/SurfaceCard';
 
@@ -17,20 +16,20 @@ function StatTile({ icon, label, value }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 0.5,
-        px: 1.75,
-        py: 1.25,
+        px: 2,
+        py: 1.5,
         borderRadius: 2,
-        border: (t) => `1px solid ${t.palette.divider}`,
-        bgcolor: (t) => alpha(t.palette.background.paper, 0.6),
+        border: `1px solid ${alpha(brand.green[400], 0.22)}`,
+        bgcolor: alpha(brand.green[400], 0.05),
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <Iconify icon={icon} width={13} sx={{ color: brand.green[600], flexShrink: 0 }} />
-        <Typography variant="caption" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, color: 'text.secondary' }}>
+        <Typography variant="caption" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'text.secondary' }}>
           {label}
         </Typography>
       </Box>
-      <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.2 }}>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3, color: 'text.primary' }}>
         {value}
       </Typography>
     </Box>
@@ -54,11 +53,19 @@ export default function ServicesPanel({
     business.businessType || business.yearsOfExperience != null || business.priceRange?.min > 0 || business.priceRange?.max > 0 || business.skills?.length > 0;
 
   return (
-    <SurfaceCard sx={{ p: 0, overflow: 'hidden' }}>
+    <SurfaceCard sx={{ p: 0, overflow: 'hidden', borderRadius: 3, border: `1px solid ${alpha(brand.green[400], 0.2)}` }}>
       {/* Quick facts */}
       {hasQuickFacts && (
-        <Box sx={{ px: 3, pt: 2.5, pb: 2, borderBottom: (t) => `1px solid ${t.palette.divider}` }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25, mb: business.skills?.length ? 2 : 0 }}>
+        <Box sx={{ px: 3, pt: 3, pb: 3, borderBottom: `1px solid ${alpha(brand.green[400], 0.18)}` }}>
+          <Box
+            sx={{
+              display: { xs: 'grid', sm: 'flex' },
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              flexWrap: 'wrap',
+              gap: 1.5,
+              mb: business.skills?.length ? 2.5 : 0,
+            }}
+          >
             {business.businessType && (
               <StatTile
                 icon={business.businessType === 'team' ? 'mingcute:group-2-fill' : 'mingcute:user-1-fill'}
@@ -96,7 +103,7 @@ export default function ServicesPanel({
             <Box>
               <Typography
                 variant="caption"
-                sx={{ display: 'block', mb: 0.75, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, color: 'text.secondary' }}
+                sx={{ display: 'block', mb: 1, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'text.secondary' }}
               >
                 Specialities
               </Typography>
@@ -107,12 +114,14 @@ export default function ServicesPanel({
                     label={skill}
                     size="small"
                     sx={{
-                      bgcolor: alpha(brand.green[400], 0.1),
+                      height: 26,
+                      bgcolor: alpha(brand.green[400], 0.06),
+                      border: `1px solid ${alpha(brand.green[400], 0.35)}`,
                       color: brand.green[800],
                       fontWeight: 600,
-                      fontSize: '0.72rem',
+                      fontSize: '0.75rem',
                       pointerEvents: 'none',
-                      '& .MuiChip-label': { px: 1 },
+                      '& .MuiChip-label': { px: 1.25 },
                     }}
                   />
                 ))}
@@ -123,13 +132,16 @@ export default function ServicesPanel({
       )}
 
       {/* Services header */}
-      <Box sx={{ px: 3, pt: 2.5, pb: 0, borderBottom: (t) => `1px solid ${t.palette.divider}` }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+      <Box sx={{ px: 3, pt: 3, pb: 0, borderBottom: `1px solid ${alpha(brand.green[400], 0.18)}` }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2.5 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, ...textGradient(`135deg, ${brand.green[400]} 0%, ${brand.green[900]} 100%`) }}>
+            <Typography
+              variant="h4"
+              sx={{ mb: 0.5, fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem', lg: '1.75rem' } }}
+            >
               Services
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>
               Select a category then choose your service to book.
             </Typography>
           </Box>
@@ -137,18 +149,22 @@ export default function ServicesPanel({
             label={`${business.services?.items?.length ?? 0} services`}
             size="small"
             sx={{
+              mt: 0.5,
+              flexShrink: 0,
+              height: 26,
               fontWeight: 700,
               fontSize: '0.72rem',
-              color: 'text.primary',
-              bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+              color: brand.green[800],
+              bgcolor: alpha(brand.green[400], 0.06),
+              border: `1px solid ${alpha(brand.green[400], 0.35)}`,
               pointerEvents: 'none',
-              '& .MuiChip-label': { px: 1 },
+              '& .MuiChip-label': { px: 1.25 },
             }}
           />
         </Box>
 
         {(business.services?.items?.length ?? 0) > 0 && (
-        <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', pb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', pb: 2.5 }}>
           {categories.map((cat) => {
             const isActive = selectedCategory === cat._id;
             return (
@@ -161,10 +177,10 @@ export default function ServicesPanel({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 0.5,
-                  px: 1.5,
-                  py: 0.5,
+                  px: 1.75,
+                  py: 0.7,
                   borderRadius: 99,
-                  border: `1.5px solid ${isActive ? brand.green[400] : alpha('#000', 0.12)}`,
+                  border: `1px solid ${isActive ? brand.green[400] : alpha(brand.green[400], 0.35)}`,
                   bgcolor: isActive ? brand.green[400] : 'transparent',
                   color: isActive ? '#fff' : 'text.secondary',
                   fontFamily: 'inherit',

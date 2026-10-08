@@ -13,10 +13,9 @@ import { Iconify } from 'src/components/iconify';
 import { useDebouncedInput } from 'src/hooks/use-debounced-input';
 import { useGetPublicPackagesQuery, useGetPublicServicesQuery } from 'src/store/Reducer/services-api';
 import { getItemId, normalizePackage, normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
-import ServiceCard from 'src/sections/active-sections/services-view/components/service-card-main';
-import PackageCard from 'src/sections/active-sections/services-view/components/package-card';
 
 import CardSkeleton from './CardSkeleton';
+import ListingPreviewCard from './ListingPreviewCard';
 import SearchBox from './SearchBox';
 import SurfaceCard from './SurfaceCard';
 import { brand } from './theme';
@@ -71,13 +70,9 @@ export default function ServicesPackagesSection() {
   const handleView = (item) => openListing(item, activeTab);
 
   return (
-    <Box id="services" sx={{ mt: 4, mb: 3, px: { xs: 2, md: 3 }, scrollMarginTop: '92px' }}>
-      <Stack spacing={2} sx={{ mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: brand.green[600] }}>
-            Services & Packages
-          </Typography>
-
+    <Box id="services" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 5, md: 8 }, scrollMarginTop: '92px' }}>
+      <Stack spacing={2.5} sx={{ mb: { xs: 3, md: 4 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 1.5 }}>
           <Tabs
             value={activeTab}
             onChange={(_, value) => setActiveTab(value)}
@@ -138,11 +133,11 @@ export default function ServicesPackagesSection() {
             const item = activeTab === 'services' ? normalizeService(rawItem) : normalizePackage(rawItem);
             return (
               <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
-                {activeTab === 'services' ? (
-                  <ServiceCard svc={item} onView={() => handleView(item)} hideDistance />
-                ) : (
-                  <PackageCard pkg={item} onView={() => handleView(item)} hideDistance />
-                )}
+                <ListingPreviewCard
+                  kind={activeTab === 'services' ? 'service' : 'package'}
+                  item={{ ...item, distance: null }}
+                  onView={() => handleView(item)}
+                />
               </Grid>
             );
           })}

@@ -55,7 +55,7 @@ const TABS = [
   },
 ];
 
-const LIMIT = 9;
+const LIMIT = 12;
 
 export const getItemId = (item) => item?._id || item?.id;
 
@@ -96,20 +96,32 @@ export function normalizePackage(item) {
 
 function CardSkeleton() {
   return (
-    <Card sx={{ p: 2.25, borderRadius: 2 }}>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Skeleton variant="rounded" width={64} height={64} sx={{ borderRadius: 2, flexShrink: 0 }} />
-        <Box sx={{ flex: 1 }}>
-          <Skeleton variant="text" width="60%" height={24} />
-          <Skeleton variant="text" width="90%" height={20} />
-          <Skeleton variant="text" width="70%" height={20} />
+    <Card sx={{ height: '100%', overflow: 'hidden', borderRadius: 3, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ position: 'relative', overflow: 'hidden', width: '100%', aspectRatio: '16 / 10' }}>
+        <Skeleton variant="rectangular" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', transform: 'none' }} />
+        <Skeleton variant="rounded" sx={{ position: 'absolute', top: 12, left: 12, width: 76, height: 25 }} />
+        <Skeleton variant="rounded" sx={{ position: 'absolute', top: 12, right: 12, width: 48, height: 25 }} />
+      </Box>
+
+      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ mb: 1 }}>
+          <Skeleton variant="text" width="82%" height={27} />
+          <Skeleton variant="text" width="62%" height={27} />
         </Box>
-      </Stack>
-      <Skeleton variant="text" width="100%" height={1} sx={{ mb: 2 }} />
-      <Stack direction="row" justifyContent="space-between">
-        <Skeleton variant="text" width={60} height={32} />
-        <Skeleton variant="rounded" width={70} height={30} sx={{ borderRadius: 1.5 }} />
-      </Stack>
+
+        <Skeleton variant="text" width="70%" height={20} sx={{ mb: 1.25 }} />
+        <Skeleton variant="rounded" width={82} height={25} sx={{ borderRadius: 99 }} />
+
+        <Box sx={{ flex: 1, minHeight: 16 }} />
+
+        <Box sx={{ pt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Skeleton variant="text" width={48} height={17} />
+            <Skeleton variant="text" width={64} height={28} />
+          </Box>
+          <Skeleton variant="rounded" width={92} height={36} sx={{ borderRadius: 99 }} />
+        </Box>
+      </Box>
     </Card>
   );
 }
@@ -310,12 +322,16 @@ export function CustomerServicesView() {
           key={activeTab}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-            gap: 2,
+            gridTemplateColumns: {
+              xs: 'repeat(1, minmax(0, 1fr))',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(4, minmax(0, 1fr))',
+            },
+            gap: 1.5,
           }}
         >
           {isFetchingActiveTab ? (
-            Array.from({ length: 6 }).map((_, index) => <CardSkeleton key={index} />)
+            Array.from({ length: LIMIT }).map((_, index) => <CardSkeleton key={index} />)
           ) : activeItems.length ? (
             activeItems.map((item) => {
               if (activeTab === 'promotions') {

@@ -82,6 +82,30 @@ export const businessesApi = createApi({
       providesTags: ['business'],
     }),
 
+    searchByImage: builder.mutation({
+      query: (image) => {
+        if (typeof image === 'string') {
+          return { url: API_ROUTES.IMAGE_SEARCH, method: 'POST', body: { imageUrl: image } };
+        }
+        const body = new FormData();
+        body.append('image', image);
+        return { url: API_ROUTES.IMAGE_SEARCH, method: 'POST', body };
+      },
+      transformResponse: (response) => {
+        const { businesses, services, packages, portfolios, imageAnalysis } = response?.data || {};
+        return {
+          ...response,
+          data: businesses || [],
+          businesses: businesses || [],
+          services: services || [],
+          packages: packages || [],
+          portfolios: portfolios || [],
+          imageAnalysis: imageAnalysis || null,
+          meta: response?.meta || {},
+        };
+      },
+    }),
+
     // Public marketplace/homepage — a single business's detail page (services, ratings, reviews, etc.) for customers to browse.
     getPublicBusinessById: builder.query({
       query: (businessId) => ({
@@ -342,7 +366,11 @@ export const businessesApi = createApi({
         method: 'PATCH',
         body: { status, ...(reason ? { reason } : {}) },
       }),
-      invalidatesTags: ['reviews'],
+      invalidatesTags: (result, error, { businessId }) => [
+        'reviews',
+        { type: 'business', id: businessId },
+        { type: 'business', id: `${businessId}-reviews` },
+      ],
     }),
 
     // Admin — permanently delete a review.
@@ -360,6 +388,7 @@ export const {
   useGetBusinessesQuery,
   useGetAdminBusinessesQuery,
   useGetPublicBusinessesQuery,
+  useSearchByImageMutation,
   useGetPublicBusinessByIdQuery,
   useUpdateProviderStatusMutation,
   useUpdateProviderCertificationMutation,

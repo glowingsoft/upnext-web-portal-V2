@@ -6,6 +6,8 @@ import { ScrollProgress, useScrollProgress } from 'src/components/animate/scroll
 
 import { paths } from 'src/routes/paths';
 
+import { usePublicFonts } from 'src/hooks/use-public-fonts';
+
 import { HomeHeader } from '../home-header';
 import LandingPage from '../landing/LandingPage';
 import LandingFooter from '../landing/Footer';
@@ -15,6 +17,8 @@ import LandingFooter from '../landing/Footer';
 export function HomeView({ section = 'home' }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  usePublicFonts();
 
   const handleJoinAsProvider = () => {
     navigate(paths.auth.jwt.signIn);

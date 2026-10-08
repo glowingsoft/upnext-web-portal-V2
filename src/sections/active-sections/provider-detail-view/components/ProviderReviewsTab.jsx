@@ -7,7 +7,7 @@ import { toast } from 'src/components/snackbar';
 import { usePathname } from 'src/routes/hooks';
 import { useTranslate } from 'src/locales/use-locales';
 import { useGetReviewsQuery } from 'src/store/Reducer/services-api';
-import { useGetBusinessReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
+import { useGetAdminReviewsQuery, useGetBusinessReviewsPublicQuery } from 'src/store/Reducer/businesses-api';
 import { normalizeReview, normalizeReviewStats } from 'src/utils/reviews';
 
 const REVIEWS_LIMIT = 10;
@@ -196,8 +196,8 @@ export default function ProviderReviewsTab({ provider, isPublicView = false }) {
     { scope: 'business', targetId, page, limit: REVIEWS_LIMIT, rating: activeFilter === 'all' ? undefined : activeFilter },
     { skip: !targetId || isAdminRoute || isPublicView }
   );
-  const adminBusinessReviewsResult = useGetBusinessReviewsQuery(
-    { businessId: targetId, page, limit: REVIEWS_LIMIT, rating: activeFilter === 'all' ? undefined : activeFilter },
+  const adminBusinessReviewsResult = useGetAdminReviewsQuery(
+    { scope: 'business', targetId, status: 'approved', page, limit: REVIEWS_LIMIT, rating: activeFilter === 'all' ? undefined : activeFilter },
     { skip: !targetId || !isAdminRoute }
   );
   const publicBusinessReviewsResult = useGetBusinessReviewsPublicQuery(
@@ -216,8 +216,8 @@ export default function ProviderReviewsTab({ provider, isPublicView = false }) {
     { scope: 'business', targetId, page: 1, limit: 1 },
     { skip: !targetId || isAdminRoute || isPublicView }
   );
-  const adminStatsResult = useGetBusinessReviewsQuery(
-    { businessId: targetId, page: 1, limit: 1 },
+  const adminStatsResult = useGetAdminReviewsQuery(
+    { scope: 'business', targetId, status: 'approved', page: 1, limit: 1 },
     { skip: !targetId || !isAdminRoute }
   );
   const publicStatsResult = useGetBusinessReviewsPublicQuery(
@@ -245,10 +245,8 @@ export default function ProviderReviewsTab({ provider, isPublicView = false }) {
     setPage(1);
   }, [activeFilter]);
 
-  const stats = useMemo(
-    () => normalizeReviewStats(statsData?.data?.stats, []),
-    [statsData?.data?.stats]
-  );
+  const rawStats = isAdminRoute ? statsData?.meta?.stats : statsData?.data?.stats;
+  const stats = useMemo(() => normalizeReviewStats(rawStats, []), [rawStats]);
   const totalReviews = Number(stats.totalReviews ?? 0);
   const averageRating = Number(stats.averageRating ?? 0);
   const breakdown = useMemo(
