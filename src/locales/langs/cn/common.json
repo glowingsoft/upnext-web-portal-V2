@@ -394,7 +394,7 @@
   "bookingsCount": "{{count}} 次预订",
   "todaysSchedule": "今日日程",
   "viewCalendar": "查看日历",
-  "noAppointmentsToday": "今天没有安排预约。",
+  "noAppointmentsTodayShort": "今天没有安排预约。",
   "total": "总计",
   "noBookingsYet": "暂无预订。",
   "recentReviews": "最新评价",
@@ -1092,5 +1092,18 @@
   "tryCheckingTyposOrCompleteWords": "请检查拼写错误或使用完整的词语。",
   "slotsCount": "{{count}} 个时段",
   "showAllSlots": "显示所有时段",
-  "showLessSlots": "收起"
+  "showLessSlots": "收起",
+  "viewBooking": "查看预约",
+  "previous": "上一页",
+  "next": "下一页",
+  "bookingsOnDay": "{{count}} 个预约",
+  "nothingBookedThisDay": "当天没有预约。",
+  "nextBooking": "下一个预约",
+  "clientWithName": "客户：{{name}}",
+  "withProviderName": "服务方：{{name}}",
+  "noBookingsToday": "今天没有预约",
+  "bookingsToday": "今天 {{count}} 个",
+  "requestsWaitingForYou": "{{count}} 个请求等待您处理",
+  "appointmentsToday": "今天有 {{count}} 个预约",
+  "requestsAwaitingConfirmation": "{{count}} 个请求等待确认"
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
@@ -52,9 +52,16 @@ export function JwtResetPasswordView() {
   });
 
   const {
+    watch,
+    trigger,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isSubmitted },
   } = methods;
+
+  const newPasswordValue = watch('newPassword');
+  useEffect(() => {
+    if (isSubmitted) trigger('confirmPassword');
+  }, [newPasswordValue, isSubmitted, trigger]);
 
   const onSubmit = handleSubmit(async (data) => {
     setErrorMsg('');

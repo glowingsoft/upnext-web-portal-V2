@@ -1,13 +1,9 @@
 import { useRef, useState, useCallback } from 'react';
 
-import { useResponsive } from 'src/hooks/use-responsive';
-
 // ----------------------------------------------------------------------
 
 export function useCalendar() {
   const calendarRef = useRef(null);
-
-  const smUp = useResponsive('up', 'sm');
 
   const getCalendarApi = () => calendarRef.current?.getApi?.();
 
@@ -19,7 +15,7 @@ export function useCalendar() {
 
   const [selectedRange, setSelectedRange] = useState(null);
 
-  const [view, setView] = useState(smUp ? 'dayGridMonth' : 'timeGridDay');
+  const [view, setView] = useState('dayGridMonth');
 
   const onOpenForm = useCallback(() => {
     setOpenForm(true);
@@ -36,11 +32,11 @@ export function useCalendar() {
 
     if (!calendarApi) return;
 
-    const newView = smUp ? 'dayGridMonth' : 'timeGridDay';
+    const newView = 'dayGridMonth';
     calendarApi.changeView(newView);
     setView(newView);
     setDate(calendarApi.getDate());
-  }, [smUp]);
+  }, []);
 
   const onChangeView = useCallback((newView) => {
     const calendarApi = getCalendarApi();

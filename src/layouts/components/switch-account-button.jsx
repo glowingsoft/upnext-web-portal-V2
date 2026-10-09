@@ -50,6 +50,10 @@ export function SwitchAccountButton({ onClose, ...other }) {
         return;
       }
 
+      let permission = 2;
+      if (ADMIN_USER_TYPES.includes(nextUser?.accountState?.userType)) permission = 1;
+
+      dispatch(setUser({ ...nextUser, permission }));
 
       dispatch(authApi.util.resetApiState());
       dispatch(bookingsApi.util.resetApiState());
@@ -63,11 +67,6 @@ export function SwitchAccountButton({ onClose, ...other }) {
       dispatch(walletsApi.util.resetApiState());
       dispatch(badgesApi.util.resetApiState());
       dispatch(notificationsApi.util.resetApiState());
-
-      let permission = 2;
-      if (ADMIN_USER_TYPES.includes(nextUser?.accountState?.userType)) permission = 1;
-
-      dispatch(setUser({ ...nextUser, permission }));
 
       onClose?.();
       goToPostLogin(router, paths, permission, nextUser?.accountState?.userType, nextUser?.profile);

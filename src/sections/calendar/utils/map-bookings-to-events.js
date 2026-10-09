@@ -26,6 +26,17 @@ export const BOOKING_STATUS_LABEL_COLOR = {
 
 const LONG_EVENT_THRESHOLD_MINUTES = 240;
 
+export function formatBookingTimeRange(start, end) {
+  if (!start) return '';
+
+  const from = dayjs(start);
+  const to = end ? dayjs(end) : null;
+  if (!to || !to.isValid()) return from.format('h:mm A');
+
+  const sameHalf = from.format('A') === to.format('A');
+  return `${from.format(sameHalf ? 'h:mm' : 'h:mm A')} – ${to.format('h:mm A')}`;
+}
+
 function parseTimeOnDate(baseDate, timeStr) {
   const cleaned = String(timeStr || '').trim();
   if (!cleaned) return null;

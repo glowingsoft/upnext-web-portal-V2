@@ -62,6 +62,11 @@ export function JwtVerifyLoginOtpView() {
         return;
       }
 
+      if (['user', 'customer'].includes(user?.accountState?.userType) && user?.profile?.status && user.profile.status !== 'active') {
+        toast.error('Your profile is not active. Please contact support.');
+        return;
+      }
+
       let permission = 2;
       if (user?.accountState?.userType === 'admin' || user?.accountState?.userType === 'subadmin') {
         permission = 1;

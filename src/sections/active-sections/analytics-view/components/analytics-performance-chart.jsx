@@ -31,16 +31,10 @@ export function AnalyticsPerformanceChart({ data = [], loading = false }) {
       zoom: { enabled: false },
     },
     colors: [theme.palette.primary.main],
-    stroke: { curve: 'smooth', width: 3 },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.2,
-        opacityTo: 0.02,
-        stops: [0, 90, 100],
-      },
-    },
+    stroke: { show: false },
+    fill: { type: 'solid', opacity: 1 },
+    plotOptions: { bar: { borderRadius: 6, columnWidth: sortedPoints.length <= 4 ? '28%' : '55%' } },
+    dataLabels: { enabled: false },
     xaxis: {
       categories,
       axisBorder: { show: false },
@@ -70,14 +64,17 @@ export function AnalyticsPerformanceChart({ data = [], loading = false }) {
 
   return (
     <Card sx={{ p: { xs: 2, md: 3 }, borderRadius: 2 }}>
-      <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
-        {t('performanceChart')}
+      <Typography variant="h6" sx={{ fontWeight: 800 }}>
+        {t('revenueByMonth', { defaultValue: 'Revenue by month' })}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+        {t('revenueByMonthSubheader', { defaultValue: 'Total earned in each month with bookings' })}
       </Typography>
 
       {loading ? (
         <Skeleton variant="rounded" height={280} sx={{ borderRadius: 2 }} />
       ) : sortedPoints.length > 0 ? (
-        <Chart type="area" series={series} options={chartOptions} height={280} />
+        <Chart type="bar" series={series} options={chartOptions} height={280} />
       ) : (
         <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 6 }}>
           {t('noDataAvailable')}

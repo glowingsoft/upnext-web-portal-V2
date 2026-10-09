@@ -1,6 +1,7 @@
 export const API_ROUTES = {
   AUTH: {
     LOGIN: '/auth/login',
+    SOCIAL_AUTH: '/auth/social-auth',
     LOGIN_VERIFY_OTP: '/auth/login/verify-otp',
     SIGNUP: '/auth/register',
     ADMIN_LOGIN: 'admin/login',
@@ -47,6 +48,7 @@ export const API_ROUTES = {
   PUBLIC_BUSINESSES: '/app/public/businesses',
   IMAGE_SEARCH: '/app/image-search',
   PUBLIC_BUSINESS_BY_ID: (id) => `/app/public/businesses/${id}`,
+  PROFILE_TRAFFIC: (profileId) => `/app/public/traffic/${profileId}`,
 
   CATEGORIES: '/categories',
   CATEGORIES_BY_ID: (id) => `/categories/${id}`,

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z as zod } from 'zod';
@@ -25,6 +25,7 @@ import { useSignupMutation, useUploadS3Mutation } from 'src/store/Reducer/auth';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { usePublicFonts } from 'src/hooks/use-public-fonts';
 import { authFieldSx, authHeadingSx } from './auth-form-styles';
+import { GoogleSignInButton } from './google-sign-in-button';
 import { saveSignupFlowDraft, setSignupFlowStage, SIGNUP_FLOW_STAGE } from './sign-up/signup-flow-storage';
 import { getFcmToken } from 'src/lib/firebase-messaging';
 
@@ -71,9 +72,16 @@ export function JwtSignUpView() {
 
   const {
     reset,
+    watch,
+    trigger,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isSubmitted },
   } = methods;
+
+  const passwordValue = watch('password');
+  useEffect(() => {
+    if (isSubmitted) trigger('confirmPassword');
+  }, [passwordValue, isSubmitted, trigger]);
 
   const onSubmit = handleSubmit(async (data) => {
     setErrorMsg('');
@@ -120,7 +128,7 @@ export function JwtSignUpView() {
 
   return (
     <>
-      <Stack spacing={1.5} sx={{ mb: 3 }}>
+      <Stack spacing={1} sx={{ mb: 2 }}>
         <Typography variant="h4" sx={authHeadingSx}>
           Create your account
         </Typography>
@@ -141,7 +149,7 @@ export function JwtSignUpView() {
       )}
 
       <Form methods={methods} onSubmit={onSubmit}>
-        <Stack spacing={2} sx={authFieldSx}>
+        <Stack spacing={1.5} sx={authFieldSx}>
           <ToggleButtonGroup
             exclusive
             fullWidth
@@ -164,12 +172,24 @@ export function JwtSignUpView() {
             <ToggleButton value="provider">Provider</ToggleButton>
           </ToggleButtonGroup>
 
-          <Field.UploadAvatar name="profileIcon" />
+          <GoogleSignInButton role={role} label="Sign up with Google" dividerAfter onError={setErrorMsg} />
+
+          <Field.UploadAvatar
+            name="profileIcon"
+            sx={{
+              width: 104,
+              height: 104,
+              p: 0.75,
+              '& .upload-placeholder': { gap: 0.25 },
+              '& .upload-placeholder .MuiTypography-root': { fontSize: 10, lineHeight: 1.2 },
+              '& .upload-placeholder svg': { width: 24, height: 24 },
+            }}
+          />
           <Typography
             variant="caption"
-            sx={{ display: 'block', textAlign: 'center', color: 'text.disabled', mt: -1 }}
+            sx={{ display: 'block', textAlign: 'center', color: 'text.disabled', mt: -0.5 }}
           >
-            Allowed *.jpeg, *.jpg, *.png, *.gif<br />max size of 3 Mb
+            JPG, PNG or GIF, up to 3 MB
           </Typography>
           <Field.Text name="name" label="Full Name" InputLabelProps={{ shrink: true }} />
           <Field.Text name="email" label="Email address" InputLabelProps={{ shrink: true }} />

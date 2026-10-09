@@ -36,6 +36,9 @@ export const CONFIG = {
   googleMaps: {
     apiKey: import.meta.env.VITE_GOOGLE_MAP_API_KEY ?? '',
   },
+  google: {
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+  },
   /**
    * Firebase
    */

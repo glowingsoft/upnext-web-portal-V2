@@ -183,7 +183,7 @@ export function AuthSplitLayout({ sx, section, children }) {
               [theme.breakpoints.up(layoutQuery)]: {
                 marginBottom: 0,
                 justifyContent: 'center',
-                py: isSignUpRoute ? 4 : 'calc(var(--layout-header-desktop-height) + 24px)',
+                py: isSignUpRoute ? 3 : 'calc(var(--layout-header-desktop-height) + 24px)',
               },
             }),
           }}
