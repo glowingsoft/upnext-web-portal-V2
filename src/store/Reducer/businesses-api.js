@@ -82,6 +82,14 @@ export const businessesApi = createApi({
       providesTags: ['business'],
     }),
 
+    recordProfileVisit: builder.mutation({
+      query: ({ profileId, source }) => ({
+        url: API_ROUTES.PROFILE_TRAFFIC(profileId),
+        method: 'POST',
+        body: { source },
+      }),
+    }),
+
     searchByImage: builder.mutation({
       query: (image) => {
         if (typeof image === 'string') {
@@ -389,6 +397,7 @@ export const {
   useGetAdminBusinessesQuery,
   useGetPublicBusinessesQuery,
   useSearchByImageMutation,
+  useRecordProfileVisitMutation,
   useGetPublicBusinessByIdQuery,
   useUpdateProviderStatusMutation,
   useUpdateProviderCertificationMutation,

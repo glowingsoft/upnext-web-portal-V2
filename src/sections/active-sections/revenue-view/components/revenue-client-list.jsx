@@ -49,9 +49,11 @@ export function RevenueClientList({ clients = [] }) {
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
                 {client.name}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-                {client.lastService}
-              </Typography>
+              {client.lastService && (
+                <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }} noWrap>
+                  {t('lastServiceWithName', { name: client.lastService, defaultValue: 'Last service: {{name}}' })}
+                </Typography>
+              )}
             </Box>
 
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'primary.main', flexShrink: 0 }}>

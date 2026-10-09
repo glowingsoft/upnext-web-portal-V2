@@ -394,7 +394,7 @@
   "bookingsCount": "{{count}} lượt đặt",
   "todaysSchedule": "Lịch Hôm Nay",
   "viewCalendar": "Xem lịch",
-  "noAppointmentsToday": "Không có lịch hẹn nào hôm nay.",
+  "noAppointmentsTodayShort": "Không có lịch hẹn nào hôm nay.",
   "total": "Tổng cộng",
   "noBookingsYet": "Chưa có lượt đặt nào.",
   "recentReviews": "Đánh Giá Gần Đây",
@@ -1092,5 +1092,18 @@
   "tryCheckingTyposOrCompleteWords": "Hãy thử kiểm tra lỗi chính tả hoặc sử dụng từ đầy đủ.",
   "slotsCount": "{{count}} khung giờ",
   "showAllSlots": "Hiển thị tất cả khung giờ",
-  "showLessSlots": "Thu gọn"
+  "showLessSlots": "Thu gọn",
+  "viewBooking": "Xem lịch đặt",
+  "previous": "Trước",
+  "next": "Tiếp",
+  "bookingsOnDay": "{{count}} lịch đặt",
+  "nothingBookedThisDay": "Không có lịch đặt nào trong ngày này.",
+  "nextBooking": "Lịch đặt tiếp theo",
+  "clientWithName": "Khách hàng: {{name}}",
+  "withProviderName": "Với {{name}}",
+  "noBookingsToday": "Hôm nay không có lịch đặt",
+  "bookingsToday": "{{count}} hôm nay",
+  "requestsWaitingForYou": "{{count}} yêu cầu đang chờ bạn phản hồi",
+  "appointmentsToday": "{{count}} lịch hẹn hôm nay",
+  "requestsAwaitingConfirmation": "{{count}} yêu cầu đang chờ xác nhận"
 }

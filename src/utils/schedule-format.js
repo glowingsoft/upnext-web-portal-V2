@@ -1,3 +1,4 @@
+import { error, grey, info, primary, success, warning } from 'src/theme/core/palette';
 
 export const MONTH_LABELS = { jan: 'Jan', feb: 'Feb', mar: 'Mar', apr: 'Apr', may: 'May', jun: 'Jun', jul: 'Jul', aug: 'Aug', sep: 'Sep', oct: 'Oct', nov: 'Nov', dec: 'Dec' };
 
@@ -6,12 +7,12 @@ export const BOOKING_STATUS_LABEL_KEYS = { scheduled: 'scheduled', requested: 'r
 export const SCHEDULE_STATUS_LABELS = { scheduled: 'Scheduled', ongoing: 'Ongoing', completed: 'Completed' };
 
 export const SCHEDULE_STATUS_ACCENTS = {
-  scheduled: '#8b5cf6',
-  ongoing: '#f59e0b',
-  completed: '#3b82f6',
-  requested: '#10b981',
-  canceled: '#ef4444',
-  expired: '#64748b',
+  scheduled: info.main,
+  ongoing: primary.main,
+  completed: success.main,
+  requested: warning.main,
+  canceled: error.main,
+  expired: grey[500],
 };
 
 export function formatSlotTime12h(open) {

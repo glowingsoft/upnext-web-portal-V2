@@ -17,10 +17,11 @@ import { fCurrency } from 'src/utils/format-number';
 import { normalizeImageUrl } from 'src/utils/normalize-image-url';
 import { SCHEDULE_STATUS_ACCENTS, MONTH_LABELS, BOOKING_STATUS_LABEL_KEYS, formatSlotTime12h, getInitials } from 'src/utils/schedule-format';
 import { useGetHomeQuery } from 'src/store/Reducer/auth';
+import { DashboardHero } from '../dashboard-hero';
 import { CourseWidgetSummary } from '../../course/course-widget-summary';
 import { RecentReviewsCard } from '../provider-dashboard-panels';
 import { EcommerceYearlySales } from '../../e-commerce/ecommerce-yearly-sales';
-import { AppTodaysSchedule } from '../app-todays-schedule';
+import { AppTodaysSchedule, isClosedScheduleStatus } from '../app-todays-schedule';
 import { TopCustomers } from '../app-top-customers';
 import { AppSessionStatus } from '../app-session-status';
 import { ProviderDashboardSkeleton } from '../dashboard-skeleton';
@@ -134,6 +135,7 @@ export function ProviderDashboardView() {
         email: item.email,
         avatar: normalizeImageUrl(item.profileImage),
         totalBookings: item.totalBookings,
+        totalSpent: (item.totalSpentMinor || 0) / 100,
       })),
     [homeData?.data?.topCustomers]
   );
@@ -147,6 +149,7 @@ export function ProviderDashboardView() {
         rating: review.rating,
         text: review.comment,
         serviceTitle: review.service?.title,
+        createdAt: review.createdAt,
       })),
     [homeData?.data?.recentReviews]
   );
@@ -171,6 +174,26 @@ export function ProviderDashboardView() {
     list.sort((a, b) => String(a.slot?.open || '').localeCompare(String(b.slot?.open || '')));
     return list.map(normalizeTodaysSchedule);
   }, [homeData?.data?.todaysSchedules]);
+
+  const activeToday = summary?.todaysBooking?.count ?? todaysAppointments.filter((item) => !isClosedScheduleStatus(item.statusKey)).length;
+  const requestedCount = summary?.pendingRequests?.count ?? (bookingStatus?.items || []).find((item) => item.status === 'requested')?.count ?? 0;
+  const heroHighlights = [
+    {
+      icon: 'solar:calendar-mark-bold',
+      label: activeToday === 0 ? t('noBookingsToday') : t('bookingsToday', { count: activeToday }),
+      onClick: () => handleNavigate(paths.dashboard.calendar),
+    },
+    ...(requestedCount > 0
+      ? [
+          {
+            icon: 'solar:bell-bing-bold',
+            attention: true,
+            label: t('requestsWaitingForYou', { count: requestedCount }),
+            onClick: () => handleNavigate(getBookingsPath('requested')),
+          },
+        ]
+      : []),
+  ];
 
   const revenueGrowth = homeData?.data?.revenueGrowth;
   const revenueChart = useMemo(() => {
@@ -272,13 +295,12 @@ export function ProviderDashboardView() {
         </Box>
       )}
 
-      <Typography variant="h4" sx={{ mb: 1 }}>
-        {getGreeting()}
-      </Typography>
-
-      <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-        {t('providerDashboardWelcome')}
-      </Typography>
+      <DashboardHero
+        greeting={getGreeting()}
+        highlights={isLoading ? [] : heroHighlights}
+        primaryAction={{ label: t('viewCalendar'), icon: 'solar:calendar-bold', onClick: () => handleNavigate(paths.dashboard.calendar) }}
+        secondaryAction={{ label: t('bookings'), onClick: () => handleNavigate(paths.dashboard.bookings) }}
+      />
 
       {isLoading ? (
         <ProviderDashboardSkeleton />
@@ -421,7 +443,12 @@ export function ProviderDashboardView() {
         </Grid>
 
         <Grid xs={12} md={6} lg={4} sx={{ display: 'flex' }}>
-          <AppTodaysSchedule appointments={todaysAppointments} onViewCalendar={() => handleNavigate(paths.dashboard.calendar)} sx={{ flex: 1 }} />
+          <AppTodaysSchedule
+            appointments={todaysAppointments}
+            onViewCalendar={() => handleNavigate(paths.dashboard.calendar)}
+            onRowClick={(id) => handleNavigate(paths.dashboard.bookingDetails(id))}
+            sx={{ flex: 1 }}
+          />
         </Grid>
 
         <Grid xs={12} md={6} lg={4} sx={{ display: 'flex' }}>
@@ -434,7 +461,7 @@ export function ProviderDashboardView() {
         </Grid>
 
         <Grid xs={12} md={5} lg={4}>
-          <RecentReviewsCard reviews={recentReviews} />
+          <RecentReviewsCard reviews={recentReviews} onViewAll={() => handleNavigate(paths.dashboard.businessProfile)} />
         </Grid>
       </Grid>
       )}

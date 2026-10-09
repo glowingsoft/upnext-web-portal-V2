@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { paths } from 'src/routes/paths';
-import { useRouter } from 'src/routes/hooks';
+import { useRouter, usePathname } from 'src/routes/hooks';
 
 import { SplashScreen } from 'src/components/loading-screen';
 import { selectUser } from 'src/store/slices/userSlice';
+import { needsProfileSetup } from 'src/utils/profile-setup';
 import { consumeAuthRedirectPath, consumeLoginNavHandled } from 'src/sections/auth/jwt/auth-redirect-storage';
 import { getSignupFlowStage, SIGNUP_FLOW_STAGE } from 'src/sections/auth/jwt/sign-up/signup-flow-storage';
 
@@ -15,6 +16,7 @@ import { useAuthContext } from '../hooks';
 
 export function GuestGuard({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const user = useSelector(selectUser);
 
@@ -28,6 +30,15 @@ export function GuestGuard({ children }) {
 
   const checkPermissions = async () => {
     if (loading) {
+      return;
+    }
+
+    if (user && needsProfileSetup(user)) {
+      if (pathname === paths.auth.jwt.signUpComplete) {
+        setIsChecking(false);
+      } else {
+        router.replace(paths.auth.jwt.signUpComplete);
+      }
       return;
     }
 
@@ -62,7 +73,7 @@ export function GuestGuard({ children }) {
   useEffect(() => {
     checkPermissions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated, loading, user]);
+  }, [authenticated, loading, user, pathname]);
 
   if (isChecking) {
     return <SplashScreen />;

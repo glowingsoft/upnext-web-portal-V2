@@ -104,7 +104,9 @@ export function TopRatedProviders({ title, subheader, providers, onViewAll, onRo
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
                 <Rating readOnly size="small" precision={0.1} max={1} value={1} />
                 <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
-                  {typeof p.rating === 'number' ? p.rating.toFixed(1) : '-'} - {p.reviewCount ?? 0} {t('reviews')}
+                  {(p.reviewCount ?? 0) > 0
+                    ? `${typeof p.rating === 'number' ? p.rating.toFixed(1) : '-'} - ${p.reviewCount} ${t('reviews')}`
+                    : t('new')}
                 </Typography>
               </Stack>
 

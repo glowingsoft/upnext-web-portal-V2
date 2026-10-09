@@ -6,11 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { Form } from 'src/components/hook-form';
+import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 import { paths } from 'src/routes/paths';
 import { setUser } from 'src/store/slices/userSlice';
+import { SignOutButton } from 'src/layouts/components/sign-out-button';
 import { usePublicFonts } from 'src/hooks/use-public-fonts';
 
 import { consumeAuthRedirectPath, consumeAuthService, markLoginNavHandled } from '../auth-redirect-storage';
@@ -90,6 +92,7 @@ export function JwtSignUpCompleteView() {
   const isCustomer = role === 'customer';
 
   const methods = useForm({
+    mode: 'onChange',
     resolver: zodResolver(isCustomer ? CustomerProfileSchema : ProviderProfileSchema),
     defaultValues: isCustomer ? customerProfileDefaultValues : providerProfileDefaultValues,
   });
@@ -277,9 +280,12 @@ export function JwtSignUpCompleteView() {
           profileIcon: draft.avatarUrl || '',
           language: 'en',
         },
-        accountState: freshUser?.accountState || {
-          userType: draft.role === 'provider' ? 'business' : 'user',
-          status: 'active',
+        accountState: {
+          ...(freshUser?.accountState || {
+            userType: role === 'provider' ? 'business' : 'user',
+            status: 'active',
+          }),
+          [role === 'provider' ? 'hasBusinessProfile' : 'hasUserProfile']: true,
         },
         token: user?.token,
         refreshToken: user?.refreshToken,
@@ -329,15 +335,24 @@ export function JwtSignUpCompleteView() {
 
         <Box sx={{ minHeight: 280, ...authFieldSx }}>{renderStepContent(activeStep, role)}</Box>
 
-        <Stack direction="row" spacing={1.5} justifyContent={canGoBack ? 'space-between' : 'flex-end'} sx={{ mt: 2 }}>
+        <Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ mt: 2, gap: 1.5 }}>
+          <SignOutButton
+            fullWidth={false}
+            size="medium"
+            variant="outlined"
+            startIcon={<Iconify icon="solar:logout-2-bold" />}
+          />
+
+          <Box sx={{ flexGrow: 1 }} />
+
           {canGoBack ? (
-            <Button variant="outlined" color="inherit" onClick={handleBack} sx={{ minWidth: 100 }}>
+            <Button variant="outlined" color="inherit" onClick={handleBack} sx={{ minWidth: 80 }}>
               Back
             </Button>
           ) : null}
 
           {isLastStep ? (
-            <LoadingButton variant="contained" color="primary" loading={isSubmitting} onClick={handleFinalSubmit} loadingIndicator="Saving..." sx={{ minWidth: 160 }}>
+            <LoadingButton variant="contained" color="primary" loading={isSubmitting} onClick={handleFinalSubmit} loadingIndicator="Saving..." sx={{ minWidth: 120 }}>
               Continue
             </LoadingButton>
           ) : (
