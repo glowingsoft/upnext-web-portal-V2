@@ -22,7 +22,6 @@ const userSlice = createSlice({
     },
 
     logout: (state) => {
-      console.log('userSlice - Logging out');
       state.user = null;
       setMyLocation(null);
     },

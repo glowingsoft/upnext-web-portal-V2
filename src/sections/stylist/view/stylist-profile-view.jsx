@@ -10,7 +10,8 @@ import { paths } from 'src/routes/paths';
 
 import { brand } from 'src/sections/home/landing/theme';
 import { setAuthRedirectPath, setAuthService } from 'src/sections/auth/jwt/auth-redirect-storage';
-import { useGetPublicBusinessByIdQuery } from 'src/store/Reducer/businesses-api';
+import { useGetPublicBusinessByIdQuery, useRecordProfileVisitMutation } from 'src/store/Reducer/businesses-api';
+import { claimProfileVisit, getProfileVisitSource, settleProfileVisit } from 'src/utils/profile-visit';
 import { getItemDurationMins } from 'src/utils/service-duration';
 
 import ProfileHeader from './components/ProfileHeader';
@@ -44,6 +45,19 @@ export function StylistProfileView() {
 
   const { data, isLoading, isFetching } = useGetPublicBusinessByIdQuery(businessId, { skip: !businessId });
   const business = data?.data;
+  const [recordProfileVisit] = useRecordProfileVisitMutation();
+  const profileId = business?._id;
+
+  useEffect(() => {
+    if (!profileId) return;
+    const source = getProfileVisitSource();
+    const key = claimProfileVisit(profileId, source);
+    if (!key) return;
+    recordProfileVisit({ profileId, source })
+      .unwrap()
+      .then(() => settleProfileVisit(key, true))
+      .catch(() => settleProfileVisit(key, false));
+  }, [profileId, recordProfileVisit]);
   const loading = isLoading || isFetching;
 
   // Show the readable slug in the address bar when the page was opened by ID.

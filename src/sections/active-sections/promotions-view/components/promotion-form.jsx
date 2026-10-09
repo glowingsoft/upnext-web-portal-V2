@@ -144,12 +144,17 @@ export function PromotionForm({ editData, onSubmit, onCancel }) {
 
   const {
     watch,
+    trigger,
     setValue,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isSubmitted },
   } = methods;
 
   const scope = watch('scope');
+  const targetsKey = `${scope}|${(watch('targetServices') || []).join(',')}|${(watch('targetPackages') || []).join(',')}`;
+  useEffect(() => {
+    if (isSubmitted) trigger(['targetServices', 'targetPackages']);
+  }, [targetsKey, isSubmitted, trigger]);
   const discountType = watch('discountType');
   const descriptionValue = watch('description');
   const previousScopeRef = useRef(scope);

@@ -17,6 +17,14 @@ export const authApi = createApi({
       }),
     }),
 
+    socialAuth: builder.mutation({
+      query: (body) => ({
+        url: API_ROUTES.AUTH.SOCIAL_AUTH,
+        method: 'POST',
+        body,
+      }),
+    }),
+
     adminLogin: builder.mutation({
       query: (login) => ({
         url: API_ROUTES.AUTH.LOGIN,
@@ -271,6 +279,7 @@ export const authApi = createApi({
 
 export const {
   useLoginMutation,
+  useSocialAuthMutation,
   useVerifyLoginOtpMutation,
   useAdminLoginMutation,
   useSignupMutation,

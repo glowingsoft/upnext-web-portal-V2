@@ -15,12 +15,14 @@ import { normalizeImageUrl } from 'src/utils/normalize-image-url';
 import { SCHEDULE_STATUS_ACCENTS, MONTH_LABELS, BOOKING_STATUS_LABEL_KEYS, formatSlotTime12h, getInitials } from 'src/utils/schedule-format';
 import { useGetHomeQuery } from 'src/store/Reducer/auth';
 import { getMyLocation, isRealCoords } from 'src/utils/my-location-storage';
+import { normalizeService } from 'src/sections/active-sections/services-view/customer-services-view';
+import { DashboardHero } from '../dashboard-hero';
 import { CourseWidgetSummary } from '../../course/course-widget-summary';
 import { AppSessionStatus } from '../app-session-status';
 import { AppSessionsOverTime } from '../app-sessions-over-time';
 import { AppSuggestedEvents } from '../app-suggested-events';
 import { AppSuggestedServices } from '../app-suggested-services';
-import { AppTodaysSchedule } from '../app-todays-schedule';
+import { AppTodaysSchedule, isClosedScheduleStatus } from '../app-todays-schedule';
 import { TopRatedProviders } from '../app-top-rated-providers';
 import { OutstandingDebtBanner } from '../outstanding-debt-banner';
 import { CustomerDashboardSkeleton } from '../dashboard-skeleton';
@@ -38,20 +40,7 @@ function formatUpcomingEventDate(event) {
   const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const timePart = event.time ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
 
-  return [datePart, timePart].filter(Boolean).join(' - ');
-}
-
-function normalizeSuggestedService(item) {
-  return {
-    _id: item._id,
-    name: item.name,
-    photos: item.photos,
-    durationMins: item.sessionSlotMins,
-    averageRating: item.avgRating,
-    providerName: item.business?.businessName,
-    price: item.price,
-    distanceKm: item.distance ?? item.distanceKm ?? item.business?.location?.distanceKm ?? item.business?.distanceKm,
-  };
+  return [datePart, timePart].filter(Boolean).join(' · ');
 }
 
 function normalizeCustomerTodaysSchedule(item) {
@@ -88,12 +77,12 @@ function normalizeSuggestedBusiness(item) {
 
 function mapUpcomingEventToSuggestedItem(event) {
   const location = [event.city, event.state].filter(Boolean).join(', ');
-  const subtitle = [[event.venue, location].filter(Boolean).join(', '), formatUpcomingEventDate(event)].filter(Boolean).join(' - ');
 
   return {
     id: event.id,
     title: event.name,
-    subtitle,
+    dateLabel: formatUpcomingEventDate(event),
+    venueLabel: [event.venue, location].filter(Boolean).join(', '),
     image: event.image,
     categories: event.genre || event.segment || '',
   };
@@ -130,14 +119,14 @@ export function CustomerDashboardView() {
   const suggestedServices = useMemo(
     () =>
       (homeData?.data?.suggestedServices || [])
-        .map(normalizeSuggestedService)
-        .sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0))
-        .slice(0, 3),
+        .map(normalizeService)
+        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+        .slice(0, 2),
     [homeData?.data?.suggestedServices]
   );
 
   const suggestedEvents = useMemo(
-    () => (homeData?.data?.suggestedEvents || []).slice(0, 3).map(mapUpcomingEventToSuggestedItem),
+    () => (homeData?.data?.suggestedEvents || []).slice(0, 4).map(mapUpcomingEventToSuggestedItem),
     [homeData?.data?.suggestedEvents]
   );
 
@@ -186,14 +175,41 @@ export function CustomerDashboardView() {
 
   const getBookingsPath = (status) => `${paths.dashboard.bookings}?status=${status}`;
 
+  const nextAppointment = todaysAppointments.find((item) => !isClosedScheduleStatus(item.statusKey) && item.statusKey !== 'completed');
+  const requestedCount = summary?.requestedBookings?.count ?? 0;
+  const heroHighlights = [
+    nextAppointment
+      ? {
+          icon: 'solar:clock-circle-bold',
+          label: t('nextTodayAt', {
+            time: `${nextAppointment.time} ${nextAppointment.meridiem}`,
+            title: nextAppointment.title,
+            name: nextAppointment.location,
+            defaultValue: 'Next today: {{time}} · {{title}} with {{name}}',
+          }),
+          onClick: () => handleNavigate(paths.dashboard.bookingDetails(nextAppointment.id)),
+        }
+      : { icon: 'solar:calendar-mark-bold', label: t('noAppointmentsTodayShort', { defaultValue: 'No appointments today' }) },
+    ...(requestedCount > 0
+      ? [
+          {
+            icon: 'solar:bell-bing-bold',
+            attention: true,
+            label: t('requestsAwaitingConfirmation', { count: requestedCount }),
+            onClick: () => handleNavigate(getBookingsPath('requested')),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <DashboardContent maxWidth={false} sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
-      <Typography variant="h4" sx={{ mb: 1 }}>
-        {getGreeting()}
-      </Typography>
-      <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-        {t('welcomeMessage')}
-      </Typography>
+      <DashboardHero
+        greeting={getGreeting()}
+        highlights={isLoading ? [] : heroHighlights}
+        primaryAction={{ label: t('findAStylist', { defaultValue: 'Find a stylist' }), icon: 'solar:magnifer-bold', onClick: () => handleNavigate(paths.dashboard.providers) }}
+        secondaryAction={{ label: t('viewCalendar'), onClick: () => handleNavigate(paths.dashboard.calendar) }}
+      />
 
       <OutstandingDebtBanner debt={outstandingDebt} onPaymentSuccess={refetchHome} />
 
@@ -212,8 +228,8 @@ export function CustomerDashboardView() {
             <CourseWidgetSummary
               title={t('providers')}
               total={summary?.providers?.count ?? 0}
-              icon={`${CONFIG.site.basePath}/assets/icons/navbar/ic-clients.svg`}
               color="info"
+              icon={`${CONFIG.site.basePath}/assets/icons/navbar/ic-clients.svg`}
               helperText={t('newThisMonthCount', { count: summary?.providers?.change ?? 0 })}
               sx={{ cursor: 'pointer' }}
               onClick={() => handleNavigate(paths.dashboard.providers)}
@@ -222,8 +238,8 @@ export function CustomerDashboardView() {
             <CourseWidgetSummary
               title={t('amountSpent')}
               total={(summary?.amountSpent?.amountMinor ?? 0) / 100}
-              currency="$"
               color="success"
+              currency="$"
               helperText={t('thisMonth')}
               icon={`${CONFIG.site.basePath}/assets/icons/navbar/ic-revenue.svg`}
             />
@@ -322,7 +338,7 @@ export function CustomerDashboardView() {
             services={suggestedServices}
             onViewAll={() => handleNavigate(paths.dashboard.services)}
             onServiceClick={(id) => handleNavigate(paths.dashboard.serviceDetails(id))}
-            sx={{ flex: 1, height: 440 }}
+            sx={{ flex: 1, minHeight: 440 }}
           />
         </Grid>
 
@@ -333,12 +349,17 @@ export function CustomerDashboardView() {
             providers={topRatedProviders}
             onViewAll={() => handleNavigate(paths.dashboard.providers)}
             onRowClick={(id) => handleNavigate(paths.dashboard.providerDetails(id))}
-            sx={{ flex: 1, height: 440 }}
+            sx={{ flex: 1, minHeight: 440 }}
           />
         </Grid>
 
         <Grid xs={12} md={7} lg={8} sx={{ display: 'flex', alignItems: 'stretch' }}>
-          <AppTodaysSchedule appointments={todaysAppointments} sx={{ flex: 1, width: 1, height: 440 }} onViewCalendar={() => handleNavigate(paths.dashboard.calendar)} />
+          <AppTodaysSchedule
+            appointments={todaysAppointments}
+            sx={{ flex: 1, width: 1, minHeight: 440 }}
+            onViewCalendar={() => handleNavigate(paths.dashboard.calendar)}
+            onRowClick={(id) => handleNavigate(paths.dashboard.bookingDetails(id))}
+          />
         </Grid>
 
         <Grid xs={12} md={5} lg={4} sx={{ display: 'flex', alignItems: 'stretch' }}>
@@ -347,7 +368,7 @@ export function CustomerDashboardView() {
             events={suggestedEvents}
             onViewAll={() => handleNavigate(paths.dashboard.events)}
             onEventClick={(id) => handleNavigate(paths.dashboard.eventDetails(id))}
-            sx={{ flex: 1, width: 1, height: 440 }}
+            sx={{ flex: 1, width: 1, minHeight: { md: 440 } }}
           />
         </Grid>
       </Grid>

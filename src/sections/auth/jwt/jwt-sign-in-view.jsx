@@ -27,6 +27,7 @@ import { useDispatch } from 'react-redux';
 import { setPasswordResetSource } from './password-reset-flow-storage';
 import { goToPostLogin } from './auth-redirect-storage';
 import { authFieldSx, authHeadingSx } from './auth-form-styles';
+import { GoogleSignInButton } from './google-sign-in-button';
 import { useLoginMutation } from 'src/store/Reducer/auth';
 import { setUser } from 'src/store/slices/userSlice';
 import { getFcmToken } from 'src/lib/firebase-messaging';
@@ -107,6 +108,11 @@ export function JwtSignInView() {
 
       if (!user?.accountState?.status) {
         setErrorMsg('Your account is inactive. Please contact support.');
+        return;
+      }
+
+      if (['user', 'customer'].includes(user?.accountState?.userType) && user?.profile?.status && user.profile.status !== 'active') {
+        setErrorMsg('Your profile is not active. Please contact support.');
         return;
       }
 
@@ -233,6 +239,8 @@ export function JwtSignInView() {
       <Form methods={methods} onSubmit={onSubmit}>
         {renderForm}
       </Form>
+
+      <GoogleSignInButton role={role} onError={setErrorMsg} />
     </>
   );
 }
