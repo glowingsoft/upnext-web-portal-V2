@@ -11,7 +11,7 @@ import { CUSTOMER_REVIEWS } from './data';
 import { brand } from './theme';
 
 const STATS = [
-  { end: 500, suffix: '+', label: 'Stylists' },
+  { end: 500, suffix: '+', label: 'Providers' },
   { end: 4.8, suffix: '★', label: 'Avg Rating', decimals: 1 },
   { end: 10, suffix: 'k+', label: 'Bookings' },
 ];
@@ -189,7 +189,7 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
         </Box>
       </Grid>
 
-      {/* Right — Become a Stylist */}
+      {/* Right — Become a Provider */}
       <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column' }}>
         <SurfaceCard
           sx={{
@@ -298,7 +298,7 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
           {/* CTA content */}
           <Box sx={{ p: { xs: 2.5, md: 3.5 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '1.4rem', sm: '1.4rem', md: '1.4rem', lg: '1.5rem' } }}>
-              Become a Stylist
+              Become a Provider
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 3, lineHeight: 1.8, fontSize: '0.95rem' }}>
               Set your own hours, build your client base, and get paid securely — all in one place.
@@ -328,7 +328,7 @@ export default function ReviewsAndWhySection({ onJoinAsProvider }) {
                 '&:hover': { backgroundColor: brand.green[600] },
               }}
             >
-              Join as Stylist
+              Join as Provider
             </Box>
 
             <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column' }}>

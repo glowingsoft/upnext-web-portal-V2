@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { Box, Grid, Pagination, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Grid, Pagination, Tab, Tabs, Typography, useMediaQuery } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
@@ -22,6 +23,7 @@ import SectionHeader from './SectionHeader';
 import CardSkeleton from './CardSkeleton';
 import FilterPill from './FilterPill';
 import ListingPreviewCard from './ListingPreviewCard';
+import MobileCategoryRows from './MobileCategoryRows';
 import PortfolioPreviewCard from './PortfolioPreviewCard';
 import StylistPreviewCard from './StylistPreviewCard';
 import SurfaceCard from './SurfaceCard';
@@ -33,7 +35,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 // Result types the AI search can return, in display order. `key` matches the response field.
 const RESULT_TABS = [
-  { key: 'businesses', label: 'Stylists', icon: 'mingcute:user-star-line' },
+  { key: 'businesses', label: 'Providers', icon: 'mingcute:user-star-line' },
   { key: 'services', label: 'Services', icon: 'solar:bill-list-bold-duotone' },
   { key: 'packages', label: 'Packages', icon: 'solar:box-minimalistic-bold' },
   { key: 'portfolios', label: 'Portfolios', icon: 'solar:gallery-wide-bold-duotone' },
@@ -54,6 +56,7 @@ const SORT_OPTIONS = [
   { value: 'rating_high_low', label: 'Rating: High to Low' },
   { value: 'price_low_high', label: 'Price: Low to High' },
   { value: 'price_high_low', label: 'Price: High to Low' },
+  { value: 'distance_near_far', label: 'Distance: Nearest First' },
 ];
 
 const DEFAULT_CATEGORY = { value: 'all', label: 'All Categories' };
@@ -88,13 +91,41 @@ const FILTER_ICONS = {
 };
 
 
+const SWIPE_ROW_SX = (theme) => ({
+  [theme.breakpoints.down('sm')]: {
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
+    scrollSnapType: 'x mandatory',
+    WebkitOverflowScrolling: 'touch',
+    scrollbarWidth: 'none',
+    pb: 1,
+    '&::-webkit-scrollbar': { display: 'none' },
+  },
+});
+
+const SWIPE_ITEM_SX = (theme) => ({
+  display: 'flex',
+  [theme.breakpoints.down('sm')]: {
+    flex: '0 0 84%',
+    maxWidth: '84%',
+    scrollSnapAlign: 'start',
+  },
+});
+
 export default function AvailabilitySection({ onSelectStylist }) {
   const [categoryId, setCategoryId] = useState(DEFAULT_CATEGORY.value);
   const [businessType, setBusinessType] = useState(DEFAULT_BUSINESS_TYPE);
   const [minExperience, setMinExperience] = useState(DEFAULT_MIN_EXPERIENCE);
   const [availability, setAvailability] = useState(DEFAULT_AVAILABILITY);
   const [date, setDate] = useState(null);
-  const [sortBy, setSortBy] = useState(DEFAULT_SORT);
+  const [searchParams] = useSearchParams();
+  const [initialNearPoint] = useState(() => {
+    const lat = Number(searchParams.get('lat'));
+    const lng = Number(searchParams.get('lng'));
+    if (!searchParams.has('lat') || !searchParams.has('lng') || !isRealCoords(lat, lng)) return null;
+    return { address: searchParams.get('near') || '', lat, lng };
+  });
+  const [sortBy, setSortBy] = useState(initialNearPoint ? 'distance_near_far' : DEFAULT_SORT);
 
   // AI search is costly, so the query only runs when the user submits — not on every keystroke.
   const [search, setSearch] = useState('');
@@ -173,10 +204,17 @@ export default function AvailabilitySection({ onSelectStylist }) {
     setKeyword('');
     clearImage();
   }, [clearImage]);
-  const [queryLocation, setQueryLocation] = useState(null);
+  const [queryLocation, setQueryLocation] = useState(initialNearPoint);
   const { isLocating: isDetectingLocation, requestLocation } = useLiveLocation();
 
   useEffect(() => {
+    if (!initialNearPoint) return undefined;
+    const timer = setTimeout(() => document.getElementById('available-now')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    return () => clearTimeout(timer);
+  }, [initialNearPoint]);
+
+  useEffect(() => {
+    if (initialNearPoint) return undefined;
     let cancelled = false;
 
     (async () => {
@@ -366,12 +404,16 @@ export default function AvailabilitySection({ onSelectStylist }) {
 
   const isReplacing = isImageMode ? isImageSearching : isLoading || isFetching;
 
+  const isPhone = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+  const showCategoryRows =
+    isPhone && !isImageMode && !keyword && categoryId === DEFAULT_CATEGORY.value && currentTab?.key === 'businesses' && (categoriesData?.data || []).length > 0;
+
   return (
     <Box id="available-now" sx={{ px: { xs: 2, sm: 4, md: 6, lg: 8 }, py: { xs: 7, md: 11 }, scrollMarginTop: '72px' }}>
       <SectionHeader
         eyebrow="Book Today"
         title="Available Now"
-        subtitle="Discover talented stylists near you who are ready to take your booking."
+        subtitle="Discover talented providers near you who are ready to take your booking."
       />
 
       <Box
@@ -626,20 +668,27 @@ export default function AvailabilitySection({ onSelectStylist }) {
         </Tabs>
       )}
 
-      {isReplacing ? (
-        <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
+      {showCategoryRows ? (
+        <MobileCategoryRows
+          categories={categoriesData.data}
+          baseArgs={filterArgs}
+          onSelectStylist={onSelectStylist}
+          onSeeAll={handleCategoryChange}
+        />
+      ) : isReplacing ? (
+        <Grid container spacing={{ xs: 2.5, md: 3.5 }} sx={SWIPE_ROW_SX}>
           {Array.from({ length: 8 }).map((_, index) => (
-            <Grid key={index} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
+            <Grid key={index} item xs={12} sm={6} md={4} lg={3} sx={SWIPE_ITEM_SX}>
               <CardSkeleton />
             </Grid>
           ))}
         </Grid>
       ) : (
         <>
-          <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
+          <Grid key={`${currentTab.key}-${page}`} container spacing={{ xs: 2.5, md: 3.5 }} sx={currentTab.items.length > 0 ? SWIPE_ROW_SX : undefined}>
             {currentTab.items.length > 0 ? (
               currentTab.items.map((item) => (
-                <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={{ display: 'flex' }}>
+                <Grid key={getItemId(item)} item xs={12} sm={6} md={4} lg={3} sx={SWIPE_ITEM_SX}>
                   {currentTab.key === 'businesses' && (
                     <StylistPreviewCard business={item} onSelectStylist={onSelectStylist} />
                   )}
@@ -688,14 +737,14 @@ export default function AvailabilitySection({ onSelectStylist }) {
                   </Box>
 
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    {keyword || isImageMode ? 'No results found' : 'No stylists found'}
+                    {keyword || isImageMode ? 'No results found' : 'No providers found'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320, mx: 'auto', lineHeight: 1.8, mb: 3 }}>
                     {isImageMode
                       ? 'Nothing matched your photo. Try a clearer photo or describe what you want instead.'
                       : keyword
                         ? 'Nothing matched your search. Try describing it differently or loosening the filters.'
-                        : 'No stylists match your current filters. Try a different search or category.'}
+                        : 'No providers match your current filters. Try a different search or category.'}
                   </Typography>
 
                   <Box
@@ -729,7 +778,7 @@ export default function AvailabilitySection({ onSelectStylist }) {
         </>
       )}
 
-      {totalPages > 1 && (
+      {totalPages > 1 && !showCategoryRows && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
           <Pagination
             page={page}

@@ -122,8 +122,8 @@ export const INITIAL_EVENTS = [
       startTBD: false,
       presales: [
         {
-          name: 'Stylist Presale',
-          description: 'Presale for licensed stylists and partner salons.',
+          name: 'Provider Presale',
+          description: 'Presale for licensed providers and partner salons.',
           url: 'https://www.upnextbeauty.com/events/hair-color-trends-workshop',
           startDateTime: '2026-04-05T14:00:00Z',
           endDateTime: '2026-04-09T23:59:00Z',

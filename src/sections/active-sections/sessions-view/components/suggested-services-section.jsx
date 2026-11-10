@@ -23,7 +23,7 @@ export const SuggestedServicesSection = memo(({ services, onView }) => {
           {t('suggestedServices')}
         </Typography>
       </Stack>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2.5 }}>
         {services.map((service) => (
           <ServiceCard key={service._id || service.id} svc={service} onView={() => onView(service)} />
         ))}

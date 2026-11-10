@@ -22,7 +22,7 @@ import { AddCardFields, EditCardFields, isAddCardFormValid, isEditCardFormValid 
 
 const EMPTY_EDIT_FORM = { cardHolderName: '', cardNumber: '', expMonth: null, expYear: null, isDefault: false };
 
-function CardFormDialogContent({ open, onClose, onSubmit, card = null }) {
+function CardFormDialogContent({ open, onClose, onSubmit, card = null, defaultHolderName = '', isFirstCard = false }) {
   const { t } = useTranslate();
   const stripe = useStripe();
   const elements = useElements();
@@ -41,13 +41,13 @@ function CardFormDialogContent({ open, onClose, onSubmit, card = null }) {
     if (card) {
       setEditForm({ ...EMPTY_EDIT_FORM, ...card });
     } else {
-      setCardHolderName('');
-      setSetDefault(false);
+      setCardHolderName(defaultHolderName);
+      setSetDefault(isFirstCard);
       setCardComplete(false);
       setCardError(null);
       elements?.getElement(CardElement)?.clear();
     }
-  }, [card, open, elements]);
+  }, [card, open, elements, defaultHolderName, isFirstCard]);
 
   const handleEditFieldChange = (field) => (value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
@@ -168,10 +168,17 @@ function CardFormDialogContent({ open, onClose, onSubmit, card = null }) {
   );
 }
 
-export function CardFormDialog({ open, onClose, onSubmit, card = null }) {
+export function CardFormDialog({ open, onClose, onSubmit, card = null, defaultHolderName = '', isFirstCard = false }) {
   return (
     <Elements stripe={stripePromise}>
-      <CardFormDialogContent open={open} onClose={onClose} onSubmit={onSubmit} card={card} />
+      <CardFormDialogContent
+        open={open}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        card={card}
+        defaultHolderName={defaultHolderName}
+        isFirstCard={isFirstCard}
+      />
     </Elements>
   );
 }

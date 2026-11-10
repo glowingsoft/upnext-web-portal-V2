@@ -78,10 +78,7 @@ export const ProviderProfileSchema = zod
     location: zod.string().min(1, { message: 'Business location is required!' }),
     categories: zod.array(zod.any()).min(1, { message: 'Select at least one category!' }),
     tags: zod.array(zod.any()).optional().default([]),
-    certifications: zod
-      .any()
-      .nullable()
-      .refine((v) => Boolean(v?.optionId), { message: 'Certification is required!' }),
+    certifications: zod.any().nullable().optional(),
     certificationFile: zod.any().nullable().optional(),
     skills: zod
       .array(zod.string())
@@ -104,14 +101,6 @@ export const ProviderProfileSchema = zod
         code: zod.ZodIssueCode.custom,
         message: 'Team size is required!',
         path: ['businessSize'],
-      });
-    }
-
-    if (data.certifications?.optionId && !data.certificationFile) {
-      ctx.addIssue({
-        code: zod.ZodIssueCode.custom,
-        message: 'Please upload a document for your certification!',
-        path: ['certificationFile'],
       });
     }
   });

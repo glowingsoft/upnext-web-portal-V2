@@ -39,7 +39,7 @@ export function AddCardFields({ cardHolderName, onCardHolderNameChange, setDefau
       <TextField
         fullWidth
         label={t('cardHolderName')}
-        placeholder="Sarah Johnson"
+        placeholder={t('nameOnCard', { defaultValue: 'Name on card' })}
         value={cardHolderName}
         onChange={(event) => onCardHolderNameChange(event.target.value)}
       />
@@ -99,7 +99,7 @@ export function EditCardFields({ values, onChange }) {
       <TextField
         fullWidth
         label={t('cardHolderName')}
-        placeholder="Sarah Johnson"
+        placeholder={t('nameOnCard', { defaultValue: 'Name on card' })}
         value={values.cardHolderName}
         onChange={(event) => onChange('cardHolderName')(event.target.value)}
       />

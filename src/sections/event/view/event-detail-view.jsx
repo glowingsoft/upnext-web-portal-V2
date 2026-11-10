@@ -1,9 +1,11 @@
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import { Box, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
 import { useRouter } from 'src/routes/hooks';
+import { paths } from 'src/routes/paths';
 
 import { Iconify } from 'src/components/iconify';
 import { useGetEventByIdQuery } from 'src/store/Reducer/ticketmaster-api';
@@ -132,6 +134,61 @@ function InfoRow({ icon, label, children }) {
   );
 }
 
+function getNearParams(event) {
+  const lat = Number(event.venue?.latitude);
+  const lng = Number(event.venue?.longitude);
+  if (!event.venue?.latitude || !event.venue?.longitude || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+  const near = [event.venue?.name, event.venue?.city].filter(Boolean).join(', ');
+  if (near) params.set('near', near);
+  return params.toString();
+}
+
+function BookProviderButton({ event }) {
+  const router = useRouter();
+  const user = useSelector((state) => state.user?.user);
+  const userType = user?.accountState?.userType;
+  const isCustomer = userType === 'user' || userType === 'customer';
+  const nearParams = getNearParams(event);
+
+  if (!nearParams || (user?.token && !isCustomer)) return null;
+
+  const handleClick = () => {
+    router.push(user?.token ? `${paths.dashboard.providers}?${nearParams}` : `/?${nearParams}`);
+  };
+
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={handleClick}
+      sx={{
+        mb: 2.5,
+        width: 1,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1,
+        px: 3.5,
+        py: 1.5,
+        borderRadius: 99,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontWeight: 700,
+        fontSize: '0.95rem',
+        color: brand.green[600],
+        bgcolor: 'transparent',
+        border: `1.5px solid ${brand.green[400]}`,
+        transition: 'background-color 0.18s ease',
+        '&:hover': { bgcolor: alpha(brand.green[400], 0.08) },
+      }}
+    >
+      <Iconify icon="solar:user-hand-up-bold" width={18} />
+      Book a Provider
+    </Box>
+  );
+}
+
 function EventTicketCard({ event }) {
   const timezone = event.date?.timezone;
   const price = formatEventPrice(event);
@@ -211,6 +268,8 @@ function EventTicketCard({ event }) {
           <Iconify icon="mingcute:external-link-line" width={15} />
         </Box>
       )}
+
+      <BookProviderButton event={event} />
 
       <InfoRow icon="solar:calendar-bold" label="Date & time">
         {formatPrettyEventDate(event)}

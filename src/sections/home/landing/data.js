@@ -172,12 +172,12 @@ export const HERO_STYLISTS = [
 export const HOW_IT_WORKS = [
   {
     title: 'Discover',
-    text: 'Browse verified, top-rated stylists near you. Filter by service type, location, and real-time availability to find the perfect match for your style.',
+    text: 'Browse verified, top-rated providers near you. Filter by service type, location, and real-time availability to find the perfect match for your style.',
     icon: 'mingcute:search-line',
   },
   {
     title: 'Choose Your Style',
-    text: "Explore each stylist's portfolio, read real client reviews, and select the exact service that fits your look and budget.",
+    text: "Explore each provider's portfolio, read real client reviews, and select the exact service that fits your look and budget.",
     icon: 'mingcute:scissors-line',
   },
   {
@@ -192,12 +192,12 @@ export const HOW_IT_WORKS = [
   },
   {
     title: 'Enjoy',
-    text: 'Your stylist arrives prepared and professional. Sit back, relax, and walk away looking and feeling your absolute best — guaranteed.',
+    text: 'Your provider arrives prepared and professional. Sit back, relax, and walk away looking and feeling your absolute best — guaranteed.',
     icon: 'mingcute:emoji-line',
   },
   {
     title: 'Review & Rebook',
-    text: "Rate your experience to help others find great stylists, then rebook your favourite in one tap whenever you're ready.",
+    text: "Rate your experience to help others find great providers, then rebook your favourite in one tap whenever you're ready.",
     icon: 'mingcute:star-line',
   },
 ];
@@ -205,7 +205,7 @@ export const HOW_IT_WORKS = [
 export const WHY_UPNEXT = [
   {
     title: 'Vetted Professionals',
-    text: 'Every stylist is background-checked and reviewed by real clients before joining the platform.',
+    text: 'Every provider is background-checked and reviewed by real clients before joining the platform.',
     icon: 'solar:shield-check-bold',
   },
   {
@@ -215,7 +215,7 @@ export const WHY_UPNEXT = [
   },
   {
     title: 'Secure Payments',
-    text: 'Deposit-first checkout protects both clients and stylists on every transaction.',
+    text: 'Deposit-first checkout protects both customers and providers on every transaction.',
     icon: 'solar:lock-bold',
   },
   {
@@ -229,7 +229,7 @@ export const CUSTOMER_REVIEWS = [
   {
     name: 'Sarah Thomas',
     city: 'Baytown, 2024',
-    text: 'Maya is an amazing stylist. The balayage she did looks incredible. I look fantastic.',
+    text: 'Maya is an amazing provider. The balayage she did looks incredible. I look fantastic.',
     date: 'May 10, 2024',
   },
   {
@@ -247,7 +247,7 @@ export const CUSTOMER_REVIEWS = [
   {
     name: 'Daniel Kim',
     city: 'Austin, TX',
-    text: 'Booking was effortless and the stylist nailed exactly what I asked for. Already scheduled my next visit.',
+    text: 'Booking was effortless and the provider nailed exactly what I asked for. Already scheduled my next visit.',
     date: 'Apr 12, 2024',
   },
 ];
@@ -522,7 +522,7 @@ export const STYLIST_REVIEWS = {
     { name: 'Chloe W.', rating: 4, text: 'Natural glam was exactly my vibe. She really listened and executed it perfectly.', date: 'Mar 2026' },
   ],
   10: [
-    { name: 'Zoe F.', rating: 5, text: "Devon saved my hair. After my last stylist damaged it, he brought it back to life with real care.", date: 'May 2026' },
+    { name: 'Zoe F.', rating: 5, text: "Devon saved my hair. After my last provider damaged it, he brought it back to life with real care.", date: 'May 2026' },
     { name: 'Nia B.', rating: 5, text: "The wash and style was amazing. He's so knowledgeable about curl patterns and moisture.", date: 'Apr 2026' },
     { name: 'Amy T.', rating: 4, text: 'Protective style consult was super informative. Devon really cares about long-term hair health.', date: 'Mar 2026' },
   ],

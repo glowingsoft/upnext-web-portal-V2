@@ -30,7 +30,7 @@ export default function StylistNotFound({ onBackToSearch }) {
         </Box>
 
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-          Stylist not found
+          Provider not found
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.7 }}>
           This profile may have been removed, or the link you followed is incorrect.

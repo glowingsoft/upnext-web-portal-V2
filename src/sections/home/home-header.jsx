@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,6 +11,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
 
+import { Iconify } from 'src/components/iconify';
 import { Logo } from 'src/components/logo';
 import { Label } from 'src/components/label';
 
@@ -37,6 +40,7 @@ export function HomeHeader({ showHowItWorks = true }) {
   const displayName = user?.displayName || user?.basicInfo?.name || 'My Account';
 
   const [activeHomeSection, setActiveHomeSection] = useState('home');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (location.pathname !== '/') return undefined;
@@ -79,6 +83,16 @@ export function HomeHeader({ showHowItWorks = true }) {
     navigate('/', { state: { scrollTo: 'how-it-works' } });
   };
 
+  const navItems = [
+    { label: 'Home', active: location.pathname === '/' && activeHomeSection === 'home', onClick: () => handleSectionClick('/') },
+    ...(showHowItWorks
+      ? [{ label: 'How it Works', active: location.pathname === '/' && activeHomeSection === 'how-it-works', onClick: handleHowItWorksClick }]
+      : []),
+    { label: 'Services', active: location.pathname === paths.services, onClick: () => handleSectionClick(paths.services) },
+    { label: 'Reviews', active: location.pathname === paths.reviews, onClick: () => handleSectionClick(paths.reviews) },
+    { label: 'Events', active: location.pathname === paths.events, onClick: () => handleSectionClick(paths.events) },
+  ];
+
   return (
     <>
       <Box
@@ -110,8 +124,18 @@ export function HomeHeader({ showHowItWorks = true }) {
             justifyContent: 'space-between',
           }}
         >
-          <Box onClick={handleLogoClick} sx={{ cursor: 'pointer', display: 'inline-flex', flexShrink: 0 }}>
-            <Logo width={96} height={30} disableLink />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <IconButton
+              aria-label="Open menu"
+              onClick={() => setMenuOpen(true)}
+              sx={{ ml: -1, display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
+            >
+              <Iconify icon="eva:menu-fill" width={24} />
+            </IconButton>
+
+            <Box onClick={handleLogoClick} sx={{ cursor: 'pointer', display: 'inline-flex', flexShrink: 0 }}>
+              <Logo width={96} height={30} disableLink />
+            </Box>
           </Box>
 
           <Box
@@ -124,23 +148,11 @@ export function HomeHeader({ showHowItWorks = true }) {
               justifyContent: 'center',
             }}
           >
-            <NavLink active={location.pathname === '/' && activeHomeSection === 'home'} onClick={() => handleSectionClick('/')}>
-              Home
-            </NavLink>
-            {showHowItWorks && (
-              <NavLink active={location.pathname === '/' && activeHomeSection === 'how-it-works'} onClick={handleHowItWorksClick}>
-                How it Works
+            {navItems.map((item) => (
+              <NavLink key={item.label} active={item.active} onClick={item.onClick}>
+                {item.label}
               </NavLink>
-            )}
-            <NavLink active={location.pathname === paths.services} onClick={() => handleSectionClick(paths.services)}>
-              Services
-            </NavLink>
-            <NavLink active={location.pathname === paths.reviews} onClick={() => handleSectionClick(paths.reviews)}>
-              Reviews
-            </NavLink>
-            <NavLink active={location.pathname === paths.events} onClick={() => handleSectionClick(paths.events)}>
-              Events
-            </NavLink>
+            ))}
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}>
@@ -236,6 +248,49 @@ export function HomeHeader({ showHowItWorks = true }) {
           </Box>
         </Box>
       </Box>
+
+      <Drawer
+        anchor="left"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        PaperProps={{ sx: { width: 280, p: 2.5 } }}
+        sx={{ display: { md: 'none' } }}
+      >
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Logo width={96} height={30} disableLink />
+          <IconButton aria-label="Close menu" onClick={() => setMenuOpen(false)}>
+            <Iconify icon="mingcute:close-line" width={22} />
+          </IconButton>
+        </Box>
+
+        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {navItems.map((item) => (
+            <Box
+              key={item.label}
+              component="button"
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                item.onClick();
+              }}
+              sx={(theme) => ({
+                px: 1.5,
+                py: 1.25,
+                border: 'none',
+                borderRadius: 1.5,
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontFamily: 'inherit',
+                typography: 'subtitle1',
+                color: item.active ? theme.vars.palette.primary.main : theme.vars.palette.text.primary,
+                bgcolor: item.active ? theme.vars.palette.action.hover : 'transparent',
+              })}
+            >
+              {item.label}
+            </Box>
+          ))}
+        </Box>
+      </Drawer>
 
       <Box sx={{ height: 0 }} />
     </>

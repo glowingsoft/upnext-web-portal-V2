@@ -92,7 +92,7 @@ const defaultT = (key) => {
     contactUs: 'Contact Us',
     helpCenter: 'Help Center',
     notifications: 'Notifications',
-    manageCard: 'Manage Card',
+    manageCard: 'Payment Methods',
   };
   return translations[key] || key;
 };

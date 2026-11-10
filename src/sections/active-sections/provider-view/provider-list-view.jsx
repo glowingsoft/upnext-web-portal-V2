@@ -17,6 +17,7 @@ import { FlexibleTableToolbar } from 'src/components/generic-table/table-toolbar
 import { StatusTabsFilterWrapper } from 'src/components/generic-table/tabs-filter-wrapper';
 import { useDataTable } from 'src/hooks/use-data-table';
 import { DashboardContent } from 'src/layouts/dashboard';
+import { Iconify } from 'src/components/iconify';
 import { useTranslate } from 'src/locales/use-locales';
 import { ProviderTableRow } from './provider-table-row';
 
@@ -79,8 +80,18 @@ export function ProviderListView() {
   const userType = user?.user?.accountState?.userType ?? user?.accountState?.userType;
   const isAdmin = userType === 'admin';
   const isCustomer = userType === 'customer' || userType === 'user';
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const sortByFromUrl = searchParams.get('sortBy');
+  const nearLat = Number(searchParams.get('lat'));
+  const nearLng = Number(searchParams.get('lng'));
+  const nearLabel = searchParams.get('near') || '';
+  const hasNearPoint = !isAdmin && Number.isFinite(nearLat) && Number.isFinite(nearLng) && searchParams.has('lat') && searchParams.has('lng');
+
+  const clearNearPoint = () => {
+    const next = new URLSearchParams(searchParams);
+    ['lat', 'lng', 'near'].forEach((key) => next.delete(key));
+    setSearchParams(next, { replace: true });
+  };
   const dashboardPath = isAdmin ? paths.adminDashboard.root : paths.dashboard.root;
 
   const BUSINESS_TYPE_OPTIONS = useMemo(
@@ -206,6 +217,7 @@ export function ProviderListView() {
         ...(search ? { keyword: search } : {}),
         ...(availability && availability !== 'all' ? { isAvailable: availability === 'available' } : {}),
         ...(minExperience && minExperience !== 'all' ? { minExperience } : {}),
+        ...(hasNearPoint ? { lat: nearLat, lng: nearLng, sortBy: 'distance_near_far' } : {}),
       };
     },
   });
@@ -232,8 +244,37 @@ export function ProviderListView() {
       <CustomBreadcrumbs
         heading={t('providers')}
         links={[{ name: t('dashboard'), href: dashboardPath }, { name: t('providers') }]}
-        sx={{ mb: { xs: 3, md: 5 } }}
+        sx={{ mb: hasNearPoint ? 2 : { xs: 3, md: 5 } }}
       />
+      {hasNearPoint && (
+        <Box
+          sx={{
+            mb: { xs: 2, md: 3 },
+            px: 2,
+            py: 1.25,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            borderRadius: 1.5,
+            bgcolor: 'background.neutral',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Iconify icon="solar:map-point-bold" width={20} sx={{ color: 'primary.main', flexShrink: 0 }} />
+          <Box sx={{ flex: 1, minWidth: 0, typography: 'body2' }}>
+            {t('providersNearestTo', { place: nearLabel || t('theEventVenue', { defaultValue: 'the event venue' }), defaultValue: 'Showing providers nearest to {{place}}' })}
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={clearNearPoint}
+            sx={{ p: 0, border: 'none', cursor: 'pointer', bgcolor: 'transparent', fontFamily: 'inherit', typography: 'subtitle2', color: 'primary.main', flexShrink: 0 }}
+          >
+            {t('clear')}
+          </Box>
+        </Box>
+      )}
       <Card>
         <StatusTabsFilterWrapper filterField={statusFilterField} value={filters.state.status} onChange={handleFilterChange} getCount={getStatusCount} />
         <FlexibleTableToolbar

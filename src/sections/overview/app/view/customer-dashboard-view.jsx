@@ -207,7 +207,7 @@ export function CustomerDashboardView() {
       <DashboardHero
         greeting={getGreeting()}
         highlights={isLoading ? [] : heroHighlights}
-        primaryAction={{ label: t('findAStylist', { defaultValue: 'Find a stylist' }), icon: 'solar:magnifer-bold', onClick: () => handleNavigate(paths.dashboard.providers) }}
+        primaryAction={{ label: t('findAStylist', { defaultValue: 'Find a provider' }), icon: 'solar:magnifer-bold', onClick: () => handleNavigate(paths.dashboard.providers) }}
         secondaryAction={{ label: t('viewCalendar'), onClick: () => handleNavigate(paths.dashboard.calendar) }}
       />
 

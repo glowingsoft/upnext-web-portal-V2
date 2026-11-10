@@ -1,15 +1,30 @@
-import { Avatar, Box, Chip, IconButton, Link, Stack, Tooltip } from '@mui/material';
+import { Avatar, Box, Button, Chip, IconButton, Link, Stack, Tooltip } from '@mui/material';
+import LoadingButton from '@mui/lab/LoadingButton';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
 import { memo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar';
+import { UserDeletionEligibilityChecklist } from 'src/components/user-deletion-eligibility-checklist';
+import { UserDeletionImpactSummary } from 'src/components/user-deletion-impact-summary';
+import { UserDeletionOptions } from 'src/components/user-deletion-options';
 import { useTranslate } from 'src/locales/use-locales';
 import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import { fDate } from 'src/utils/format-time';
-import { useUpdateCustomerStatusMutation } from 'src/store/Reducer/customers-api';
+import {
+  useCheckUserDeletionEligibilityMutation,
+  useDeleteCustomerMutation,
+  useHardDeleteCustomerMutation,
+  useUpdateCustomerStatusMutation,
+} from 'src/store/Reducer/customers-api';
 import { ClientQuickEditDialog } from './client-quick-edit-dialog';
 
 function normalizeClientStatus(row) {
@@ -48,8 +63,16 @@ export const SupportTableRow = memo(
     const initialStatus = normalizeClientStatus(row);
     const [statusValue, setStatusValue] = useState(initialStatus);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [deletionEligibility, setDeletionEligibility] = useState(null);
+    const [deletionMode, setDeletionMode] = useState('soft');
+    const [isHardDeleteReview, setIsHardDeleteReview] = useState(false);
     const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
     const [updateCustomerStatus] = useUpdateCustomerStatusMutation();
+    const [checkUserDeletionEligibility, { isLoading: isCheckingDeletionEligibility }] = useCheckUserDeletionEligibilityMutation();
+    const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
+    const [hardDeleteCustomer, { isLoading: isHardDeleting }] = useHardDeleteCustomerMutation();
+    const isProcessingDelete = isCheckingDeletionEligibility || isDeleting || isHardDeleting;
     const isActive = statusValue === 'active';
     const isPending = statusValue === 'pending';
     const isSuspended = statusValue === 'suspended';
@@ -72,6 +95,61 @@ export const SupportTableRow = memo(
     const handleUpdateStatus = async (nextStatus) => {
       await updateCustomerStatus({ userId: row._id, status: nextStatus }).unwrap();
       setStatusValue(nextStatus);
+    };
+
+    const handleDeleteCustomer = async () => {
+      try {
+        const eligibility = await checkUserDeletionEligibility(row._id).unwrap();
+        const eligibilityData = eligibility?.data ?? eligibility;
+
+        if (deletionMode === 'hard') {
+          if (!eligibilityData?.affectedRecords || typeof eligibilityData.affectedRecords !== 'object') {
+            toast.error(t('hardDeleteImpactUnavailable'));
+            return;
+          }
+          setDeletionEligibility(eligibilityData);
+          setIsHardDeleteReview(true);
+          return;
+        }
+
+        if (eligibilityData?.isDeletable !== true) {
+          setDeletionEligibility(eligibilityData || {});
+          return;
+        }
+        await deleteCustomer(row._id).unwrap();
+        toast.success(t('deleteSuccessMessage'));
+        setIsDeleteDialogOpen(false);
+        setDeletionEligibility(null);
+      } catch (error) {
+        toast.error(error?.data?.message || error?.message || t('failedToDelete'));
+      }
+    };
+
+    const handleConfirmHardDelete = async () => {
+      try {
+        await hardDeleteCustomer(row._id).unwrap();
+        toast.success(t('deleteSuccessMessage'));
+        setIsDeleteDialogOpen(false);
+        setDeletionEligibility(null);
+        setIsHardDeleteReview(false);
+      } catch (error) {
+        toast.error(error?.data?.message || error?.message || t('failedToDelete'));
+      }
+    };
+
+    const handleOpenDeleteDialog = () => {
+      setDeletionEligibility(null);
+      setDeletionMode('soft');
+      setIsHardDeleteReview(false);
+      setIsDeleteDialogOpen(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+      if (isProcessingDelete) return;
+      setIsDeleteDialogOpen(false);
+      setDeletionEligibility(null);
+      setDeletionMode('soft');
+      setIsHardDeleteReview(false);
     };
 
     return (
@@ -126,24 +204,73 @@ export const SupportTableRow = memo(
                 </IconButton>
               </Tooltip>
               {isAdmin && (
-                <Tooltip title={t('edit')}>
-                  <IconButton size="small" onClick={handleOpenEditDialog} sx={{ p: 0.5 }}>
-                    <Iconify icon="solar:pen-bold" width={20} />
-                  </IconButton>
-                </Tooltip>
+                <>
+                  <Tooltip title={t('edit')}>
+                    <IconButton size="small" onClick={handleOpenEditDialog} sx={{ p: 0.5 }}>
+                      <Iconify icon="solar:pen-bold" width={20} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('deleteAction')}>
+                    <IconButton size="small" color="error" onClick={handleOpenDeleteDialog} sx={{ p: 0.5 }}>
+                      <Iconify icon="solar:trash-bin-trash-bold" width={20} />
+                    </IconButton>
+                  </Tooltip>
+                </>
               )}
-
             </Stack>
           </TableCell>
         </TableRow>
 
-        <ClientQuickEditDialog
-          open={isEditDialogOpen}
-          onClose={handleCloseEditDialog}
-          client={row}
-          statusValue={statusValue}
-          onUpdateStatus={handleUpdateStatus}
-        />
+        {isAdmin && (
+          <Dialog open={isDeleteDialogOpen} onClose={handleCloseDeleteDialog} maxWidth={isHardDeleteReview ? 'sm' : 'xs'} fullWidth>
+            <DialogTitle>
+              {t(isHardDeleteReview ? 'hardDeleteReviewTitle' : deletionEligibility && deletionMode === 'soft' ? 'deletionBlockedTitle' : 'deleteCustomerTitle')}
+            </DialogTitle>
+            <DialogContent>
+              {isHardDeleteReview ? (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('hardDeleteReviewDescription')}
+                  </Typography>
+                  <UserDeletionImpactSummary affectedRecords={deletionEligibility.affectedRecords} />
+                </>
+              ) : (
+                <>
+                  {!deletionEligibility && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('deleteCustomerMessage', { name: row.name })}
+                    </Typography>
+                  )}
+                  <UserDeletionOptions
+                    value={deletionMode}
+                    onChange={(mode) => {
+                      setDeletionMode(mode);
+                      setDeletionEligibility(null);
+                      setIsHardDeleteReview(false);
+                    }}
+                  />
+                  {deletionEligibility && deletionMode === 'soft' && <UserDeletionEligibilityChecklist eligibility={deletionEligibility} />}
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDeleteDialog} disabled={isProcessingDelete}>
+                {t('close')}
+              </Button>
+              {isHardDeleteReview ? (
+                <LoadingButton color="error" variant="contained" loading={isHardDeleting} onClick={handleConfirmHardDelete}>
+                  {t('hardDeletePermanently')}
+                </LoadingButton>
+              ) : (
+                <LoadingButton color="error" variant="contained" loading={isProcessingDelete} onClick={handleDeleteCustomer}>
+                  {t(deletionMode === 'hard' ? 'reviewHardDelete' : 'deleteAction')}
+                </LoadingButton>
+              )}
+            </DialogActions>
+          </Dialog>
+        )}
+
+        <ClientQuickEditDialog open={isEditDialogOpen} onClose={handleCloseEditDialog} client={row} statusValue={statusValue} onUpdateStatus={handleUpdateStatus} />
       </>
     );
   },

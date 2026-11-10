@@ -1,11 +1,14 @@
 import { Avatar, Box, Link, Rating, Stack, Tooltip } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import LoadingButton from '@mui/lab/LoadingButton';
 import PropTypes from 'prop-types';
 import { memo, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -15,7 +18,17 @@ import { useTranslate } from 'src/locales/use-locales';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
 import { GenericTableRowActions } from 'src/components/generic-table/table-row-actions';
-import { useUpdateProviderCertificationMutation, useUpdateProviderStatusMutation } from 'src/store/Reducer/businesses-api';
+import { toast } from 'src/components/snackbar';
+import { UserDeletionEligibilityChecklist } from 'src/components/user-deletion-eligibility-checklist';
+import { UserDeletionImpactSummary } from 'src/components/user-deletion-impact-summary';
+import { UserDeletionOptions } from 'src/components/user-deletion-options';
+import {
+  useCheckUserDeletionEligibilityMutation,
+  useDeleteAdminUserMutation,
+  useHardDeleteAdminUserMutation,
+  useUpdateProviderCertificationMutation,
+  useUpdateProviderStatusMutation,
+} from 'src/store/Reducer/businesses-api';
 import { ProviderQuickEditDialog } from './provider-quick-edit-dialog';
 
 const CATEGORY_CHIPS_VISIBLE = 2;
@@ -77,9 +90,17 @@ export const ProviderTableRow = memo(
     const [certModalOpen, setCertModalOpen] = useState(false);
     const [activeCertFileIndex, setActiveCertFileIndex] = useState(0);
     const [quickEditOpen, setQuickEditOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletionEligibility, setDeletionEligibility] = useState(null);
+    const [deletionMode, setDeletionMode] = useState('soft');
+    const [isHardDeleteReview, setIsHardDeleteReview] = useState(false);
     const [localStatusOverride, setLocalStatusOverride] = useState(null);
     const [updateProviderStatus] = useUpdateProviderStatusMutation();
     const [updateProviderCertification] = useUpdateProviderCertificationMutation();
+    const [checkUserDeletionEligibility, { isLoading: isCheckingDeletionEligibility }] = useCheckUserDeletionEligibilityMutation();
+    const [deleteAdminUser, { isLoading: isDeleting }] = useDeleteAdminUserMutation();
+    const [hardDeleteAdminUser, { isLoading: isHardDeleting }] = useHardDeleteAdminUserMutation();
+    const isProcessingDelete = isCheckingDeletionEligibility || isDeleting || isHardDeleting;
     const userState = useSelector((state) => state.user);
     const userType = userState?.user?.accountState?.userType ?? userState?.accountState?.userType;
     const isAdmin = userType === 'admin';
@@ -194,6 +215,66 @@ export const ProviderTableRow = memo(
       setLocalStatusOverride('inactive');
     };
 
+    const handleDeleteProvider = async () => {
+      if (!userId) {
+        toast.error(t('deleteErrorMessage'));
+        return;
+      }
+
+      try {
+        const eligibility = await checkUserDeletionEligibility(userId).unwrap();
+        const eligibilityData = eligibility?.data ?? eligibility;
+
+        if (deletionMode === 'hard') {
+          if (!eligibilityData?.affectedRecords || typeof eligibilityData.affectedRecords !== 'object') {
+            toast.error(t('hardDeleteImpactUnavailable'));
+            return;
+          }
+          setDeletionEligibility(eligibilityData);
+          setIsHardDeleteReview(true);
+          return;
+        }
+
+        if (eligibilityData?.isDeletable !== true) {
+          setDeletionEligibility(eligibilityData || {});
+          return;
+        }
+        await deleteAdminUser(userId).unwrap();
+        toast.success(t('deleteSuccessMessage'));
+        setDeleteDialogOpen(false);
+        setDeletionEligibility(null);
+      } catch (error) {
+        toast.error(error?.data?.message || error?.message || t('deleteErrorMessage'));
+      }
+    };
+
+    const handleConfirmHardDelete = async () => {
+      try {
+        await hardDeleteAdminUser(userId).unwrap();
+        toast.success(t('deleteSuccessMessage'));
+        setDeleteDialogOpen(false);
+        setDeletionEligibility(null);
+        setIsHardDeleteReview(false);
+      } catch (error) {
+        toast.error(error?.data?.message || error?.message || t('deleteErrorMessage'));
+      }
+    };
+
+    const handleOpenDeleteDialog = () => {
+      setDeletionEligibility(null);
+      setDeletionMode('soft');
+      setIsHardDeleteReview(false);
+      setDeleteDialogOpen(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+      if (isProcessingDelete) return;
+      setDeleteDialogOpen(false);
+      setDeletionEligibility(null);
+      setDeletionMode('soft');
+      setIsHardDeleteReview(false);
+    };
+
     const actions = [
       {
         key: 'details',
@@ -211,294 +292,329 @@ export const ProviderTableRow = memo(
               tooltip: t('edit'),
               onClick: () => setQuickEditOpen(true),
             },
+            {
+              key: 'delete',
+              icon: 'solar:trash-bin-trash-bold',
+              tooltip: t('deleteAction'),
+              color: 'error',
+              onClick: handleOpenDeleteDialog,
+            },
           ]
         : []),
     ];
 
     return (
       <>
-      <TableRow hover tabIndex={-1}>
-        <TableCell>{serialNumber}</TableCell>
-        <TableCell sx={{ minWidth: 240, verticalAlign: 'middle' }}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Avatar
-              alt={userDisplayName}
-              src={userAvatar}
-              sx={{ width: 34, height: 34, bgcolor: 'primary.lighter', color: 'primary.dark', fontWeight: 700 }}
-            >
-              {getInitial(userDisplayName)}
-            </Avatar>
+        <TableRow hover tabIndex={-1}>
+          <TableCell>{serialNumber}</TableCell>
+          <TableCell sx={{ minWidth: 240, verticalAlign: 'middle' }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Avatar alt={userDisplayName} src={userAvatar} sx={{ width: 34, height: 34, bgcolor: 'primary.lighter', color: 'primary.dark', fontWeight: 700 }}>
+                {getInitial(userDisplayName)}
+              </Avatar>
 
-            <Stack sx={{ minWidth: 0 }}>
-              <Box
-                component="span"
-                sx={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {userDisplayName}
-              </Box>
-              <Box
-                component="span"
-                sx={{ color: 'text.secondary', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {userEmail || '—'}
-              </Box>
+              <Stack sx={{ minWidth: 0 }}>
+                <Box component="span" sx={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {userDisplayName}
+                </Box>
+                <Box component="span" sx={{ color: 'text.secondary', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {userEmail || '—'}
+                </Box>
+              </Stack>
             </Stack>
-          </Stack>
-        </TableCell>
+          </TableCell>
 
-        <TableCell sx={{ minWidth: 320, verticalAlign: 'middle' }}>
+          <TableCell sx={{ minWidth: 320, verticalAlign: 'middle' }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar alt={businessName} src={businessImage} sx={{ width: 40, height: 40, flexShrink: 0, bgcolor: 'primary.lighter', color: 'primary.dark', fontWeight: 700 }}>
+                {getInitial(businessName)}
+              </Avatar>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-
-            <Avatar
-              alt={businessName}
-              src={businessImage}
-              sx={{ width: 40, height: 40, flexShrink: 0, bgcolor: 'primary.lighter', color: 'primary.dark', fontWeight: 700 }}
-            >
-              {getInitial(businessName)}
-            </Avatar>
-
-            <Stack sx={{ alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
-
-              <Link color="inherit" noWrap sx={{ cursor: 'pointer', fontWeight: 600, maxWidth: '100%' }} onClick={() => router.
-                push(detailsPath)}>
-                {businessName}
-              </Link>
-              <Box
-                component="span"
-                sx={{
-                  color: 'text.secondary',
-                  fontSize: 13,
-                  whiteSpace: 'nowrap',
-                  display: 'flex', alignItems: 'center',
-                  gap: 1
-                }}
-              >
-                <Rating max={1} readOnly value={avgRating > 0 ? 1 : 0} size='small' /> {Number(avgRating).toFixed(1)} ({totalReviews} {t('reviews')})
-              </Box>
+              <Stack sx={{ alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
+                <Link color="inherit" noWrap sx={{ cursor: 'pointer', fontWeight: 600, maxWidth: '100%' }} onClick={() => router.push(detailsPath)}>
+                  {businessName}
+                </Link>
+                <Box
+                  component="span"
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: 13,
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Rating max={1} readOnly value={avgRating > 0 ? 1 : 0} size="small" /> {Number(avgRating).toFixed(1)} ({totalReviews} {t('reviews')})
+                </Box>
+              </Stack>
             </Stack>
-          </Stack>
-        </TableCell>
-        <TableCell>
-          <Stack direction="row" gap={0.5} alignItems="center" sx={{ flexWrap: 'nowrap', maxWidth: '100%' }}>
-            {categoryList.length === 0 && (
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-            )}
-            {visibleCategories.map((cat) => (
-              <Tooltip key={cat} title={cat}>
-                <Label
-                  color="info"
-                  sx={{
-                    ...categoryChipSx,
-                    ...chipTextSx,
-                    flexShrink: 0,
-                    maxWidth: 110,
-                  }}
-                >
-                  {cat}
-                </Label>
-              </Tooltip>
-            ))}
-            {extraCategoriesCount > 0 && (
-              <Tooltip title={extraCategoriesTooltip}>
-                <Label
-                  color="info"
-                  onClick={() => setCategoriesModalOpen(true)}
-                  sx={{
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    whiteSpace: 'nowrap',
-                    ...categoryChipSx,
-                  }}
-                >
-                  {`+${extraCategoriesCount}`} {t('more')}
-                </Label>
-              </Tooltip>
-            )}
-          </Stack>
-        </TableCell>
-        <TableCell>
-          <Stack direction="row" gap={0.5} alignItems="center" sx={{ flexWrap: 'nowrap', maxWidth: '100%' }}>
-            {specialties.length === 0 && (
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-            )}
-            {showChips.map((item) => (
-              <Tooltip key={item} title={item}>
-                <Label
-                  color="primary"
-                  sx={{
-                    ...specialtyChipSx,
-                    ...chipTextSx,
-                    flexShrink: 0,
-                    maxWidth: 110,
-                  }}
-                >
-                  {item}
-                </Label>
-              </Tooltip>
-            ))}
-            {hasMore && (
-              <Tooltip title={extraSpecialtiesTooltip}>
-                <Label
-                  color="primary"
-                  onClick={() => setSpecialtiesModalOpen(true)}
-                  sx={{
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    whiteSpace: 'nowrap',
-                    ...specialtyChipSx,
-                  }}
-                >
-                  {`+${extraSpecialtiesCount}`} {t('more')}
-                </Label>
-              </Tooltip>
-            )}
-          </Stack>
-        </TableCell>
-        <TableCell align="center" sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
-          {chargeLabel}
-        </TableCell>
-        <TableCell align="center" sx={{ maxWidth: 160 }}>
-          <Tooltip title={locationTooltip} arrow>
-            <Box
-              component="span"
-              sx={{
-                display: 'inline-block',
-                maxWidth: '100%',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                verticalAlign: 'middle',
-              }}
-            >
-              {locationLabel}
-            </Box>
-          </Tooltip>
-        </TableCell>
-
-        {isAdmin && (
-          <TableCell sx={{ whiteSpace: 'nowrap' }} align="center">
-            <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
-              <Label color={certifications ? CERT_STATUS_COLOR[certStatus] || 'default' : 'default'}>
-                {!certifications || certStatus === 'not_submitted' ? t('no') : certStatus ? t(certStatus) : t('pending')}
-              </Label>
-              {certFiles.length > 0 && (
-                <Tooltip title={t('viewCertificate')}>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setActiveCertFileIndex(0);
-                      setCertModalOpen(true);
+          </TableCell>
+          <TableCell>
+            <Stack direction="row" gap={0.5} alignItems="center" sx={{ flexWrap: 'nowrap', maxWidth: '100%' }}>
+              {categoryList.length === 0 && (
+                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                  —
+                </Typography>
+              )}
+              {visibleCategories.map((cat) => (
+                <Tooltip key={cat} title={cat}>
+                  <Label
+                    color="info"
+                    sx={{
+                      ...categoryChipSx,
+                      ...chipTextSx,
+                      flexShrink: 0,
+                      maxWidth: 110,
                     }}
                   >
-                    <Iconify icon="solar:file-text-bold" width={16} />
-                  </IconButton>
+                    {cat}
+                  </Label>
+                </Tooltip>
+              ))}
+              {extraCategoriesCount > 0 && (
+                <Tooltip title={extraCategoriesTooltip}>
+                  <Label
+                    color="info"
+                    onClick={() => setCategoriesModalOpen(true)}
+                    sx={{
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                      ...categoryChipSx,
+                    }}
+                  >
+                    {`+${extraCategoriesCount}`} {t('more')}
+                  </Label>
                 </Tooltip>
               )}
             </Stack>
           </TableCell>
-        )}
-
-        {!isCustomer && (
-          <TableCell sx={{ whiteSpace: 'nowrap' }} align="center">
-            <Label color={isPending ? 'warning' : isSuspended ? 'info' : isDeleted ? 'error' : isActive ? 'success' : 'secondary'}>
-              {isPending ? t('pending') : isSuspended ? t('suspended') : isDeleted ? t('deleted') : isActive ? t('active') : t('inactive')}
-            </Label>
+          <TableCell>
+            <Stack direction="row" gap={0.5} alignItems="center" sx={{ flexWrap: 'nowrap', maxWidth: '100%' }}>
+              {specialties.length === 0 && (
+                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                  —
+                </Typography>
+              )}
+              {showChips.map((item) => (
+                <Tooltip key={item} title={item}>
+                  <Label
+                    color="primary"
+                    sx={{
+                      ...specialtyChipSx,
+                      ...chipTextSx,
+                      flexShrink: 0,
+                      maxWidth: 110,
+                    }}
+                  >
+                    {item}
+                  </Label>
+                </Tooltip>
+              ))}
+              {hasMore && (
+                <Tooltip title={extraSpecialtiesTooltip}>
+                  <Label
+                    color="primary"
+                    onClick={() => setSpecialtiesModalOpen(true)}
+                    sx={{
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                      ...specialtyChipSx,
+                    }}
+                  >
+                    {`+${extraSpecialtiesCount}`} {t('more')}
+                  </Label>
+                </Tooltip>
+              )}
+            </Stack>
           </TableCell>
-        )}
-
-
-        <TableCell align='center' >
-          <Box sx={{ flex: 1, width: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <GenericTableRowActions actions={actions} />
-          </Box>
-        </TableCell>
-      </TableRow>
-
-      <Dialog open={categoriesModalOpen} onClose={() => setCategoriesModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {t('categories')}
-          <IconButton size="small" onClick={() => setCategoriesModalOpen(false)}>
-            <Iconify icon="mingcute:close-line" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack direction="row" gap={1} flexWrap="wrap">
-            {categoryList.map((cat) => (
-              <Label key={cat} color="info" sx={categoryChipSx}>
-                {cat}
-              </Label>
-            ))}
-          </Stack>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={specialtiesModalOpen} onClose={() => setSpecialtiesModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {t('specialties')}
-          <IconButton size="small" onClick={() => setSpecialtiesModalOpen(false)}>
-            <Iconify icon="mingcute:close-line" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack direction="row" gap={1} flexWrap="wrap">
-            {specialties.map((item) => (
-              <Label key={item} color="primary" sx={specialtyChipSx}>
-                {item}
-              </Label>
-            ))}
-          </Stack>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={certModalOpen} onClose={() => setCertModalOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { height: '90vh' } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {certifications?.name || t('certificate')}
-          <IconButton size="small" onClick={() => setCertModalOpen(false)}>
-            <Iconify icon="mingcute:close-line" />
-          </IconButton>
-        </DialogTitle>
-
-        {certFiles.length > 1 && (
-          <Stack direction="row" gap={1} sx={{ px: 3, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }} flexWrap="wrap">
-            {certFiles.map((_, index) => (
-              <Label
-                key={index}
-                color={index === activeCertFileIndex ? 'primary' : 'default'}
-                onClick={() => setActiveCertFileIndex(index)}
-                sx={{ cursor: 'pointer' }}
+          <TableCell align="center" sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
+            {chargeLabel}
+          </TableCell>
+          <TableCell align="center" sx={{ maxWidth: 160 }}>
+            <Tooltip title={locationTooltip} arrow>
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-block',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  verticalAlign: 'middle',
+                }}
               >
-                {t('fileNumber', { number: index + 1 })}
+                {locationLabel}
+              </Box>
+            </Tooltip>
+          </TableCell>
+
+          {isAdmin && (
+            <TableCell sx={{ whiteSpace: 'nowrap' }} align="center">
+              <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                <Label color={certifications ? CERT_STATUS_COLOR[certStatus] || 'default' : 'default'}>
+                  {!certifications || certStatus === 'not_submitted' ? t('no') : certStatus ? t(certStatus) : t('pending')}
+                </Label>
+                {certFiles.length > 0 && (
+                  <Tooltip title={t('viewCertificate')}>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setActiveCertFileIndex(0);
+                        setCertModalOpen(true);
+                      }}
+                    >
+                      <Iconify icon="solar:file-text-bold" width={16} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Stack>
+            </TableCell>
+          )}
+
+          {!isCustomer && (
+            <TableCell sx={{ whiteSpace: 'nowrap' }} align="center">
+              <Label color={isPending ? 'warning' : isSuspended ? 'info' : isDeleted ? 'error' : isActive ? 'success' : 'secondary'}>
+                {isPending ? t('pending') : isSuspended ? t('suspended') : isDeleted ? t('deleted') : isActive ? t('active') : t('inactive')}
               </Label>
-            ))}
-          </Stack>
+            </TableCell>
+          )}
+
+          <TableCell align="center">
+            <Box sx={{ flex: 1, width: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GenericTableRowActions actions={actions} />
+            </Box>
+          </TableCell>
+        </TableRow>
+
+        {isAdmin && (
+          <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} maxWidth={isHardDeleteReview ? 'sm' : 'xs'} fullWidth>
+            <DialogTitle>{t(isHardDeleteReview ? 'hardDeleteReviewTitle' : deletionEligibility && deletionMode === 'soft' ? 'deletionBlockedTitle' : 'deleteTitle')}</DialogTitle>
+            <DialogContent>
+              {isHardDeleteReview ? (
+                <>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('hardDeleteReviewDescription')}
+                  </Typography>
+                  <UserDeletionImpactSummary affectedRecords={deletionEligibility.affectedRecords} />
+                </>
+              ) : (
+                <>
+                  {!deletionEligibility && (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('deleteMessage', { name: businessName })}
+                    </Typography>
+                  )}
+                  <UserDeletionOptions
+                    value={deletionMode}
+                    onChange={(mode) => {
+                      setDeletionMode(mode);
+                      setDeletionEligibility(null);
+                      setIsHardDeleteReview(false);
+                    }}
+                  />
+                  {deletionEligibility && deletionMode === 'soft' && <UserDeletionEligibilityChecklist eligibility={deletionEligibility} />}
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDeleteDialog} disabled={isProcessingDelete}>
+                {t('close')}
+              </Button>
+              {isHardDeleteReview ? (
+                <LoadingButton color="error" variant="contained" loading={isHardDeleting} onClick={handleConfirmHardDelete}>
+                  {t('hardDeletePermanently')}
+                </LoadingButton>
+              ) : (
+                <LoadingButton color="error" variant="contained" loading={isProcessingDelete} onClick={handleDeleteProvider}>
+                  {t(deletionMode === 'hard' ? 'reviewHardDelete' : 'deleteAction')}
+                </LoadingButton>
+              )}
+            </DialogActions>
+          </Dialog>
         )}
 
-        <DialogContent sx={{ p: 0, display: 'flex', flex: 1 }}>
-          {certFiles[activeCertFileIndex] && (
-            <Box
-              component="iframe"
-              src={certFiles[activeCertFileIndex]}
-              title={certifications?.name || t('certificate')}
-              sx={{ width: '100%', height: '100%', border: 'none', flex: 1 }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        <Dialog open={categoriesModalOpen} onClose={() => setCategoriesModalOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {t('categories')}
+            <IconButton size="small" onClick={() => setCategoriesModalOpen(false)}>
+              <Iconify icon="mingcute:close-line" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              {categoryList.map((cat) => (
+                <Label key={cat} color="info" sx={categoryChipSx}>
+                  {cat}
+                </Label>
+              ))}
+            </Stack>
+          </DialogContent>
+        </Dialog>
 
-      {isAdmin && (
-        <ProviderQuickEditDialog
-          open={quickEditOpen}
-          onClose={() => setQuickEditOpen(false)}
-          provider={providerForDialog}
-          statusValue={statusValue}
-          onUpdateStatus={handleUpdateStatus}
-          onApprove={handleApproveCertification}
-          onReject={handleRejectCertification}
-        />
-      )}
+        <Dialog open={specialtiesModalOpen} onClose={() => setSpecialtiesModalOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {t('specialties')}
+            <IconButton size="small" onClick={() => setSpecialtiesModalOpen(false)}>
+              <Iconify icon="mingcute:close-line" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              {specialties.map((item) => (
+                <Label key={item} color="primary" sx={specialtyChipSx}>
+                  {item}
+                </Label>
+              ))}
+            </Stack>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={certModalOpen} onClose={() => setCertModalOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { height: '90vh' } }}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {certifications?.name || t('certificate')}
+            <IconButton size="small" onClick={() => setCertModalOpen(false)}>
+              <Iconify icon="mingcute:close-line" />
+            </IconButton>
+          </DialogTitle>
+
+          {certFiles.length > 1 && (
+            <Stack direction="row" gap={1} sx={{ px: 3, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }} flexWrap="wrap">
+              {certFiles.map((_, index) => (
+                <Label key={index} color={index === activeCertFileIndex ? 'primary' : 'default'} onClick={() => setActiveCertFileIndex(index)} sx={{ cursor: 'pointer' }}>
+                  {t('fileNumber', { number: index + 1 })}
+                </Label>
+              ))}
+            </Stack>
+          )}
+
+          <DialogContent sx={{ p: 0, display: 'flex', flex: 1 }}>
+            {certFiles[activeCertFileIndex] && (
+              <Box
+                component="iframe"
+                src={certFiles[activeCertFileIndex]}
+                title={certifications?.name || t('certificate')}
+                sx={{ width: '100%', height: '100%', border: 'none', flex: 1 }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {isAdmin && (
+          <ProviderQuickEditDialog
+            open={quickEditOpen}
+            onClose={() => setQuickEditOpen(false)}
+            provider={providerForDialog}
+            statusValue={statusValue}
+            onUpdateStatus={handleUpdateStatus}
+            onApprove={handleApproveCertification}
+            onReject={handleRejectCertification}
+          />
+        )}
       </>
     );
   },

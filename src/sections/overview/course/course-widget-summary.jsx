@@ -15,7 +15,7 @@ export function CourseWidgetSummary({ sx, icon, title, total, currency, color = 
   const theme = useTheme();
 
   return (
-    <Card sx={{ py: 2, pl: 2.5, pr: 2.5, ...sx }} {...other}>
+    <Card sx={{ py: 2, pl: 2.5, pr: 2.5, transition: theme.transitions.create(['transform', 'box-shadow'], { duration: 200 }), '&:hover': { transform: 'translateY(-4px)', boxShadow: theme.customShadows.z16 }, ...sx }} {...other}>
       <Box sx={{ flexGrow: 1 }}>
         <Box sx={{ fontSize: '1.56rem', fontWeight: 700 }}>{currency ? `${currency} ${fNumber(total)}` : fNumber(total)}</Box>
 

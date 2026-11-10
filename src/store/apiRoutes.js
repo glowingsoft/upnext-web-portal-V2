@@ -138,6 +138,9 @@ export const API_ROUTES = {
 
   ADMIN_BUSINESSES: '/admin/businesses',
   ADMIN_BUSINESS_OVERVIEW: (businessId) => `/admin/businesses/${businessId}/overview`,
+  ADMIN_USER_PROFILE_BY_ID: (userId) => `/admin/users/profile/${userId}`,
+  ADMIN_USER_DELETION_ELIGIBILITY: (userId) => `/admin/users/profile/${userId}/deletion-eligibility`,
+  ADMIN_USER_HARD_DELETE: (userId) => `/admin/users/profile/${userId}/hard-delete`,
   BUSINESS_OVERVIEW: (businessId) => `/app/businesses/${businessId}/overview`,
   ADMIN_BUSINESS_SERVICES: (businessId) => `/admin/businesses/${businessId}/services`,
   ADMIN_BUSINESS_PACKAGES: (businessId) => `/admin/businesses/${businessId}/packages`,
