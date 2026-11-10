@@ -69,7 +69,7 @@
   "noConnectionMatching": "We could not find any connection matching \"{{search}}\".",
   "noConnectionOptions": "No connection options are available right now.",
   "clearSearch": "Clear Search",
-  "manageCard": "Payment Methods",
+  "manageCard": "Manage Cards",
   "addCard": "Add Card",
   "editCard": "Edit Card",
   "deleteCard": "Delete Card",
