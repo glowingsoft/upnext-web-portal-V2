@@ -26,7 +26,7 @@ export default function HowItWorksSection() {
         <SectionHeader
           eyebrow="Simple & Seamless"
           title="How It Works"
-          subtitle="From discovering your stylist to your next appointment, in six easy steps."
+          subtitle="From discovering your provider to your next appointment, in six easy steps."
         />
 
         <Box

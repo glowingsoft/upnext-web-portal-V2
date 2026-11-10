@@ -3,11 +3,11 @@ import { Controller, useFormContext } from 'react-hook-form';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 
-export function BadgeSelect({ fieldName, badge }) {
+export function BadgeSelect({ fieldName, badge, optional = false }) {
     const { control } = useFormContext();
     const options = badge?.options || [];
 
-    const badgeLabel = badge?.translations?.en || badge?.name || fieldName;
+    const badgeLabel = `${badge?.translations?.en || badge?.name || fieldName}${optional ? ' (Optional)' : ''}`;
     const getOptionLabel = (opt) => opt?.translations?.en || opt?.name || '';
 
     return (

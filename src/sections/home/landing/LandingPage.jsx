@@ -44,7 +44,7 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
         <PageHero
           eyebrow="Reviews"
           title="Customer Reviews"
-          subtitle="Hear from clients who found and booked their stylist through UpNext."
+          subtitle="Hear from clients who found and booked their provider through UpNext."
         />
         <m.div variants={varFade({ distance: 24 }).inUp}>
           <ReviewsAndWhySection onJoinAsProvider={onJoinAsProvider} />
@@ -64,7 +64,7 @@ export default function LandingPage({ section = 'home', onJoinAsProvider, onSele
         <PageHero
           eyebrow="Services"
           title="Services & Packages"
-          subtitle="Explore treatments and bundles offered by stylists near you."
+          subtitle="Explore treatments and bundles offered by providers near you."
         />
         <m.div variants={varFade({ distance: 24 }).inUp}>
           <ServicesPackagesSection />

@@ -146,7 +146,7 @@ export function CertificationUploadField() {
   return (
     <Stack spacing={1} sx={{ width: '100%' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="subtitle2">Upload License Image</Typography>
+        <Typography variant="subtitle2">Upload License Image (Optional)</Typography>
 
         <Button
           component="label"
@@ -305,7 +305,7 @@ export function StepProviderProfile({ step }) {
             <CircularProgress size={24} />
           </Stack>
         ) : (
-          <BadgeSelect fieldName="certifications" badge={certificationBadge} />
+          <BadgeSelect fieldName="certifications" badge={certificationBadge} optional />
         )}
 
         {selectedCertification ? (

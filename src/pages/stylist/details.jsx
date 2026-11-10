@@ -6,7 +6,7 @@ import { StylistProfileView } from 'src/sections/stylist/view/stylist-profile-vi
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Stylist Profile | ${CONFIG.site.brand}` };
+const metadata = { title: `Provider Profile | ${CONFIG.site.brand}` };
 
 export default function Page() {
   return (

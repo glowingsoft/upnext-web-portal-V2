@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -29,9 +30,20 @@ function getBrandIcon(brand) {
   return BRAND_ICONS[key];
 }
 
-export function PaymentCardTile({ card, onEdit, onDelete }) {
+function getExpiryState(card) {
+  const month = Number(card.expMonth);
+  const year = Number(card.expYear);
+  if (!month || !year) return null;
+  const now = new Date();
+  const monthsLeft = (year - now.getFullYear()) * 12 + (month - (now.getMonth() + 1));
+  if (monthsLeft < 0) return 'expired';
+  return monthsLeft <= 1 ? 'expiresSoon' : null;
+}
+
+export function PaymentCardTile({ card, onEdit, onDelete, onSetDefault, settingDefault = false }) {
   const { t } = useTranslate();
   const brandIcon = getBrandIcon(card.brand);
+  const expiryState = getExpiryState(card);
 
   return (
     <Card
@@ -121,15 +133,31 @@ export function PaymentCardTile({ card, onEdit, onDelete }) {
       </Box>
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.25 }}>
-        {card.isDefault ? (
-          <Label color="primary" variant="soft">
-            {t('defaultCard')}
-          </Label>
-        ) : (
-          <span />
-        )}
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0 }}>
+          {card.isDefault && (
+            <Label color="primary" variant="soft">
+              {t('defaultCard')}
+            </Label>
+          )}
+          {expiryState && (
+            <Label color={expiryState === 'expired' ? 'error' : 'warning'} variant="soft">
+              {expiryState === 'expired' ? t('expired') : t('expiresSoon', { defaultValue: 'Expires soon' })}
+            </Label>
+          )}
+          {!card.isDefault && onSetDefault && expiryState !== 'expired' && (
+            <Button
+              size="small"
+              color="primary"
+              disabled={settingDefault}
+              onClick={() => onSetDefault(card)}
+              sx={{ px: 1, minWidth: 0, textTransform: 'none', fontWeight: 700, whiteSpace: 'nowrap' }}
+            >
+              {t('setAsDefault', { defaultValue: 'Set as default' })}
+            </Button>
+          )}
+        </Stack>
 
-        <Stack direction="row" spacing={0.5}>
+        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
           <Tooltip title={t('editCard')}>
             <IconButton size="small" onClick={() => onEdit?.(card)}>
               <Iconify icon="solar:pen-bold" width={17} />

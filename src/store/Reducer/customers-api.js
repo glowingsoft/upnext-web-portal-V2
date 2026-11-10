@@ -38,7 +38,37 @@ export const customersApi = createApi({
       }),
       invalidatesTags: ['customers'],
     }),
+
+    checkUserDeletionEligibility: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_DELETION_ELIGIBILITY(userId),
+        method: 'GET',
+      }),
+    }),
+
+    deleteCustomer: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_PROFILE_BY_ID(userId),
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['customers'],
+    }),
+
+    hardDeleteCustomer: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_HARD_DELETE(userId),
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['customers'],
+    }),
   }),
 });
 
-export const { useGetCustomersQuery, useGetCustomerByIdQuery, useUpdateCustomerStatusMutation } = customersApi;
+export const {
+  useGetCustomersQuery,
+  useGetCustomerByIdQuery,
+  useUpdateCustomerStatusMutation,
+  useCheckUserDeletionEligibilityMutation,
+  useDeleteCustomerMutation,
+  useHardDeleteCustomerMutation,
+} = customersApi;

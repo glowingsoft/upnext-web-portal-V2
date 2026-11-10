@@ -5,7 +5,7 @@ import { ManageCardsPage } from 'src/sections/active-sections/cards-view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `Manage Card - ${CONFIG.site.name}` };
+const metadata = { title: `Payment Methods -${CONFIG.site.name}` };
 
 export default function Page() {
   return (

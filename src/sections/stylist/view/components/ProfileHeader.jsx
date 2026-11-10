@@ -99,7 +99,7 @@ export default function ProfileHeader({ business }) {
             </Avatar>
             {business.isAvailable && (
               <Box
-                aria-label="Active stylist"
+                aria-label="Active provider"
                 sx={{
                   position: 'absolute',
                   right: { xs: 4, md: 8 },

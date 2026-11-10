@@ -9,7 +9,7 @@ import { brand } from './theme';
 import { scrollToId } from './Nav';
 
 const TRUST_POINTS = [
-  { icon: 'solar:shield-check-bold', title: 'Verified stylists', caption: 'Licensed and reviewed' },
+  { icon: 'solar:shield-check-bold', title: 'Verified providers', caption: 'Licensed and reviewed' },
   { icon: 'solar:calendar-mark-bold', title: 'Instant booking', caption: 'Real-time availability' },
   { icon: 'solar:card-bold', title: 'Secure payments', caption: 'Pay safely online' },
 ];
@@ -54,7 +54,7 @@ export default function HeroBanner({ onJoinAsProvider }) {
         <Box>
           <Chip
             icon={<Iconify icon="solar:star-bold" width={14} sx={{ color: brand.green[600] }} />}
-            label="Top-Rated Stylists Near You"
+            label="Top-Rated Providers Near You"
             size="small"
             sx={{
               mb: { xs: 2.5, md: 3 },
@@ -80,7 +80,7 @@ export default function HeroBanner({ onJoinAsProvider }) {
               fontSize: { xs: '2.375rem', sm: '3.25rem', md: '3.25rem', lg: '4.25rem' },
             }}
           >
-            Book Top Stylists{' '}
+            Book Top Providers{' '}
             <Box component="span" sx={{ display: 'block', fontStyle: 'italic', color: brand.green[600] }}>
               Near You
             </Box>
@@ -128,7 +128,7 @@ export default function HeroBanner({ onJoinAsProvider }) {
                 },
               }}
             >
-              Find Stylists
+              Find Providers
               <Iconify icon="mingcute:arrow-right-line" width={18} />
             </Box>
 

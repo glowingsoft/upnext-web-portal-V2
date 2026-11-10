@@ -243,7 +243,7 @@ export default function ServicesPanel({
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 280, mx: 'auto', lineHeight: 1.7 }}>
               {categories.length > 1 && selectedCategory !== 'all'
                 ? 'No services in this category yet — try a different one.'
-                : 'This stylist hasn’t added any bookable services yet.'}
+                : 'This provider hasn’t added any bookable services yet.'}
             </Typography>
           </Box>
         ) : (

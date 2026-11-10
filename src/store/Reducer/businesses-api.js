@@ -8,7 +8,7 @@ export const businessesApi = createApi({
   tagTypes: ['business', 'reviews'],
   endpoints: (builder) => ({
     getBusinesses: builder.query({
-      query: ({ page = 1, limit = 10, keyword, businessType, categoryId, isAvailable, minExperience, badges } = {}) => ({
+      query: ({ page = 1, limit = 10, keyword, businessType, categoryId, isAvailable, minExperience, badges, lat, lng, sortBy } = {}) => ({
         url: API_ROUTES.BUSINESSES,
         method: 'GET',
         params: {
@@ -20,6 +20,8 @@ export const businessesApi = createApi({
           ...(isAvailable !== undefined ? { isAvailable } : {}),
           ...(minExperience !== undefined && minExperience !== '' ? { minExperience } : {}),
           ...(badges ? { badges } : {}),
+          ...(lat != null && lng != null ? { lat, lng } : {}),
+          ...(sortBy ? { sortBy } : {}),
         },
       }),
       providesTags: ['business'],
@@ -47,7 +49,30 @@ export const businessesApi = createApi({
       providesTags: ['business'],
     }),
 
-  getPublicBusinesses: builder.query({
+    checkUserDeletionEligibility: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_DELETION_ELIGIBILITY(userId),
+        method: 'GET',
+      }),
+    }),
+
+    deleteAdminUser: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_PROFILE_BY_ID(userId),
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['business'],
+    }),
+
+    hardDeleteAdminUser: builder.mutation({
+      query: (userId) => ({
+        url: API_ROUTES.ADMIN_USER_HARD_DELETE(userId),
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['business'],
+    }),
+
+    getPublicBusinesses: builder.query({
       query: ({ page = 1, limit = 10, keyword, location, lat, lng, businessType, categoryId, minExperience, badges, date, sortBy, isAvailable } = {}) => ({
         url: API_ROUTES.PUBLIC_BUSINESSES,
         method: 'GET',
@@ -163,9 +188,7 @@ export const businessesApi = createApi({
           },
         };
       },
-      providesTags: (result, error, arg) => [
-        { type: 'business', id: typeof arg === 'object' && arg !== null ? arg.businessId : arg },
-      ],
+      providesTags: (result, error, arg) => [{ type: 'business', id: typeof arg === 'object' && arg !== null ? arg.businessId : arg }],
     }),
 
     // Admin — a specific business's services, for the provider detail page's Services tab.
@@ -374,11 +397,7 @@ export const businessesApi = createApi({
         method: 'PATCH',
         body: { status, ...(reason ? { reason } : {}) },
       }),
-      invalidatesTags: (result, error, { businessId }) => [
-        'reviews',
-        { type: 'business', id: businessId },
-        { type: 'business', id: `${businessId}-reviews` },
-      ],
+      invalidatesTags: (result, error, { businessId }) => ['reviews', { type: 'business', id: businessId }, { type: 'business', id: `${businessId}-reviews` }],
     }),
 
     // Admin — permanently delete a review.
@@ -395,6 +414,9 @@ export const businessesApi = createApi({
 export const {
   useGetBusinessesQuery,
   useGetAdminBusinessesQuery,
+  useCheckUserDeletionEligibilityMutation,
+  useDeleteAdminUserMutation,
+  useHardDeleteAdminUserMutation,
   useGetPublicBusinessesQuery,
   useSearchByImageMutation,
   useRecordProfileVisitMutation,

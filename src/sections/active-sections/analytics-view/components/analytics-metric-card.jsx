@@ -14,7 +14,7 @@ export function AnalyticsMetricCard({ label, value, change, trend, icon, compare
   const trendColor = trend === 'down' ? 'error' : 'success';
 
   return (
-    <Card sx={{ py: 2, px: { xs: 2, sm: 2.5 }, height: '100%' }}>
+    <Card sx={{ py: 2, px: { xs: 2, sm: 2.5 }, height: '100%', transition: theme.transitions.create(['transform', 'box-shadow'], { duration: 200 }), '&:hover': { transform: 'translateY(-4px)', boxShadow: theme.customShadows.z16 } }}>
       <Box sx={{ pr: 4.5 }}>
         <Box sx={{ fontSize: { xs: '1.15rem', sm: '1.56rem' }, fontWeight: 700, lineHeight: 1.3, color: valueColor }}>{value}</Box>
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 
 import Button from '@mui/material/Button';
 
@@ -27,6 +28,11 @@ export function ManageCardsPage() {
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, card: null });
+  const [settingDefaultId, setSettingDefaultId] = useState(null);
+
+  const userType = useSelector((state) => state.user?.user?.accountState?.userType);
+  const userName = useSelector((state) => state.user?.user?.basicInfo?.name) || '';
+  const isCustomer = userType === 'user' || userType === 'customer';
 
   const cards = useMemo(() => (data?.data || []).map(normalizeCard), [data]);
 
@@ -56,6 +62,24 @@ export function ManageCardsPage() {
       }
     } catch (error) {
       toast.error(error?.data?.message || (card ? t('failedToUpdateCard') : t('failedToAddCard')));
+    }
+  };
+
+  const handleSetDefault = async (card) => {
+    setSettingDefaultId(card.id);
+    try {
+      await updateCard({
+        id: card.id,
+        cardHolderName: card.cardHolderName,
+        expMonth: card.expMonth,
+        expYear: card.expYear,
+        isDefault: true,
+      }).unwrap();
+      toast.success(t('updateSuccess'));
+    } catch (error) {
+      toast.error(error?.data?.message || t('failedToUpdateCard'));
+    } finally {
+      setSettingDefaultId(null);
     }
   };
 
@@ -94,7 +118,11 @@ export function ManageCardsPage() {
     <DashboardContent maxWidth={false} sx={{ display: 'flex', flex: '1 1 auto', flexDirection: 'column' }}>
       <CustomBreadcrumbs
         heading={t('manageCard')}
-        links={[{ name: t('dashboard'), href: paths.dashboard.root }, { name: t('connect'), href: paths.dashboard.appSettings.connect }, { name: t('manageCard') }]}
+        links={[
+          { name: t('dashboard'), href: paths.dashboard.root },
+          ...(isCustomer ? [] : [{ name: t('connect'), href: paths.dashboard.appSettings.connect }]),
+          { name: t('manageCard') },
+        ]}
         action={
           <Button variant="contained" color="primary" startIcon={<Iconify icon="mingcute:add-line" />} onClick={handleOpenAddCard}>
             {t('addCard')}
@@ -109,9 +137,18 @@ export function ManageCardsPage() {
         onAddCard={handleOpenAddCard}
         onEditCard={handleOpenEditCard}
         onDeleteCard={handleDeleteRequest}
+        onSetDefault={handleSetDefault}
+        settingDefaultId={settingDefaultId}
       />
 
-      <CardFormDialog open={cardDialogOpen} onClose={handleCloseCardDialog} onSubmit={handleSubmitCard} card={editingCard} />
+      <CardFormDialog
+        open={cardDialogOpen}
+        onClose={handleCloseCardDialog}
+        onSubmit={handleSubmitCard}
+        card={editingCard}
+        defaultHolderName={userName}
+        isFirstCard={cards.length === 0}
+      />
 
       <ConfirmDialog
         open={deleteDialog.open}
