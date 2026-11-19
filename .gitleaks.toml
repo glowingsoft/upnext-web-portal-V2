@@ -7,3 +7,9 @@ useDefault = true
 description = "Firebase web config keys are public by design; restrict them in Google Cloud Console instead"
 targetRules = ["gcp-api-key", "generic-api-key"]
 paths = ['''(^|[/\\])public[/\\]firebase-messaging-sw\.js$''']
+
+[[allowlists]]
+description = "i18n translation key props (labelKey, descriptionKey, ...) hold identifiers, not secrets"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''(?i)\b(label|description|title|subtitle|message|text|placeholder|helper|tooltip|heading|caption|error|hint)Key\b\s*[:=]\s*['"`]?[A-Za-z][A-Za-z0-9_.]*['"`]?''']
