@@ -417,7 +417,7 @@ export function RequestWaitingDialog({ request, onClose }) {
               startIcon={<Iconify icon="solar:calendar-mark-bold" />}
               onClick={() => {
                 onClose();
-                if (request.bookingId) router.push(paths.dashboard.bookingDetails(request.bookingId));
+                if (request.bookingId) router.push(paths.dashboard.bookingDetails(request.bookingId, 'instant'));
               }}
               sx={{ mt: 2.5 }}
             >

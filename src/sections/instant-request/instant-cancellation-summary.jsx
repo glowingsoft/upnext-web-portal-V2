@@ -45,7 +45,11 @@ export function InstantCancellationSummary({ booking, viewer = 'customer', provi
   const partlyCaptured = booking.paymentStatus === 'partially_captured';
   const payout = booking.payout || {};
   const payoutNet = payout.netCents;
-  const hasPayout = !byBusiness && payoutNet != null;
+  const payoutStatus = payout.status || booking.payoutStatus || 'none';
+  const payoutInProgress = ['pending', 'processing', 'scheduled', 'in_transit'].includes(payoutStatus);
+  const hasPayout = !byBusiness && payoutNet != null && (payoutStatus === 'paid' || payoutInProgress);
+  const payoutSkipped = !byBusiness && payoutStatus === 'skipped';
+  const payoutFailed = !byBusiness && payoutStatus === 'failed';
 
   return (
     <Card sx={{ p: { xs: 2.5, md: 3 }, border: '1px solid', borderColor: (theme) => varAlpha(theme.vars.palette.error.mainChannel, 0.24) }}>
@@ -83,6 +87,12 @@ export function InstantCancellationSummary({ booking, viewer = 'customer', provi
           ) : (
             <>
               <Row label="Customer paid (non-refundable deposit)" value={formatCents(charge)} />
+              {(payoutSkipped || payoutFailed) && (
+                <>
+                  <Divider sx={{ borderStyle: 'dashed' }} />
+                  <Row label="Your payout" value={payoutSkipped ? 'Not paid out' : 'Failed'} color={payoutFailed ? 'error.main' : 'text.secondary'} strong />
+                </>
+              )}
               {hasPayout && (
                 <>
                   {payout.stripeFeeShareCents > 0 && <Row label="Card processing fee" value={`−${formatCents(payout.stripeFeeShareCents)}`} />}
@@ -129,11 +139,25 @@ export function InstantCancellationSummary({ booking, viewer = 'customer', provi
         </Stack>
       )}
 
-      {isProviderViewer && hasPayout && (
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2, color: payout.status === 'paid' ? 'success.dark' : 'text.secondary' }}>
-          <Iconify icon={payout.status === 'paid' ? 'solar:check-circle-bold' : 'solar:clock-circle-bold'} width={18} />
+      {isProviderViewer && (hasPayout || payoutSkipped || payoutFailed) && (
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ mt: 2, color: payoutStatus === 'paid' ? 'success.dark' : payoutFailed ? 'error.main' : 'text.secondary' }}
+        >
+          <Iconify
+            icon={payoutStatus === 'paid' ? 'solar:check-circle-bold' : payoutFailed ? 'solar:danger-circle-bold' : payoutSkipped ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}
+            width={18}
+          />
           <Typography variant="caption">
-            {payout.status === 'paid' ? `Paid out ${payout.paidAt ? formatWhen(payout.paidAt) : ''}` : 'Payout is being processed.'}
+            {payoutStatus === 'paid'
+              ? `Paid out ${payout.paidAt ? formatWhen(payout.paidAt) : ''}`
+              : payoutFailed
+                ? 'The payout failed. Please contact support.'
+                : payoutSkipped
+                  ? payout.skipReason || payout.reason || 'No payout was made for this cancellation.'
+                  : 'Payout is being processed.'}
           </Typography>
         </Stack>
       )}

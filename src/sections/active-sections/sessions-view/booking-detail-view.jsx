@@ -17,7 +17,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
-import { usePathname, useRouter, useSearchParams } from 'src/routes/hooks';
+import { usePathname, useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import { useChatSocketContext } from 'src/sections/chat/chat-socket-provider';
 
@@ -1455,7 +1455,6 @@ export function BookingDetailPageView() {
   const { t, i18n } = useTranslate();
   const { id } = useParams();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const dispatch = useDispatch();
   const [instantOfferStatus, setInstantOfferStatus] = useState(null);
@@ -1464,7 +1463,7 @@ export function BookingDetailPageView() {
   const viewerType = viewer?.accountState?.userType;
   const isCustomerViewer = !readOnly && (viewerType === 'user' || viewerType === 'customer');
   const isProviderViewer = !readOnly && (viewerType === 'provider' || viewerType === 'business');
-  const isInstantBookingViewer = (isCustomerViewer || isProviderViewer) && searchParams.get('mode') === 'instant';
+  const isInstantBookingViewer = isCustomerViewer || isProviderViewer;
   const { socket } = useChatSocketContext();
 
   useEffect(() => {
