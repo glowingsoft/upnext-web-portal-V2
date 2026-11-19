@@ -1105,5 +1105,9 @@
   "bookingsToday": "{{count}} hôm nay",
   "requestsWaitingForYou": "{{count}} yêu cầu đang chờ bạn phản hồi",
   "appointmentsToday": "{{count}} lịch hẹn hôm nay",
-  "requestsAwaitingConfirmation": "{{count}} yêu cầu đang chờ xác nhận"
+  "requestsAwaitingConfirmation": "{{count}} yêu cầu đang chờ xác nhận",
+  "cancellationNonRefundable": "Không hoàn tiền",
+  "cancellationNonRefundableDescription": "Khách hàng sẽ không được hoàn tiền nếu hủy.",
+  "cancellationRefundable24h": "Hoàn tiền nếu hủy trước 24 giờ",
+  "cancellationRefundable24hDescription": "Khách hàng được hoàn tiền nếu hủy ít nhất 24 giờ trước lịch hẹn."
 }

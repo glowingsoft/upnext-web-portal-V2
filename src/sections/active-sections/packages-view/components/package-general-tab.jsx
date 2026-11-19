@@ -20,6 +20,7 @@ import { varAlpha } from 'src/theme/styles';
 import { BusinessInfoCard } from '../../services-view/components/business-info-card';
 import ServiceCard from '../../services-view/components/service-card-main';
 import { BookingScheduleDialogs } from '../../sessions-view/components/booking-schedule-dialogs';
+import { getCancellationPolicy } from 'src/utils/cancellation-policy';
 
 const DETAIL_ACCENT = '#b79a73';
 
@@ -291,39 +292,14 @@ export const PackageGeneralTab = memo(({ packageItem, promotion }) => {
     ...item,
     distance: item.distance ?? item.distanceKm ?? item.business?.distanceKm ?? item.provider?.distanceKm,
   }));
+  const cancellationPolicy = getCancellationPolicy(packageItem.cancellationPolicy);
   const policyItems = [
     {
-      icon: 'solar:calendar-add-bold',
-      palette: 'info',
-      label: t('howLateCanSomeoneBook'),
-      value: `${packageItem.latestBookHours ?? '—'}h ${packageItem.latestBookMins ?? '0'}m`,
+      icon: cancellationPolicy.value === 'non_refundable' ? 'solar:close-circle-bold' : 'solar:wallet-money-bold',
+      palette: cancellationPolicy.value === 'non_refundable' ? 'warning' : 'success',
+      label: t('cancellationPolicy', { defaultValue: 'Cancellation policy' }),
+      value: t(cancellationPolicy.labelKey, { defaultValue: cancellationPolicy.label }),
     },
-    {
-      icon: 'solar:close-circle-bold',
-      palette: 'warning',
-      label: t('howLateCanSomeoneCancel'),
-      value: `${packageItem.latestCancelHours ?? '—'}h ${packageItem.latestCancelMins ?? '0'}m`,
-    },
-    ...(packageItem.refundPercentage != null
-      ? [
-          {
-            icon: 'solar:wallet-money-bold',
-            palette: 'success',
-            label: t('refundPercentagePercent'),
-            value: `${packageItem.refundPercentage}%`,
-          },
-        ]
-      : []),
-    ...(packageItem.refundRules
-      ? [
-          {
-            icon: 'solar:document-text-bold',
-            palette: 'error',
-            label: t('rulesForRefund'),
-            value: packageItem.refundRules,
-          },
-        ]
-      : []),
     ...(daysAvailable
       ? [
           {

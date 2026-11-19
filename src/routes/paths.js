@@ -148,11 +148,12 @@ export const paths = {
 
     //new Routes
     bookings: `${ROOTS.DASHBOARD}/bookings`, // Changed sessions to bookings
-    bookingDetails: (id) => `${ROOTS.DASHBOARD}/bookings/${id}`,
+    bookingDetails: (id, mode) => `${ROOTS.DASHBOARD}/bookings/${id}${mode === 'instant' ? '?mode=instant' : ''}`,
     bookingSuccess: (id) => `${ROOTS.DASHBOARD}/bookings/success/${id}`,
     events: `${ROOTS.DASHBOARD}/events`,
     eventDetails: (id) => `${ROOTS.DASHBOARD}/events/${id}`,
     providers: `${ROOTS.DASHBOARD}/providers`,
+    liveOffers: `${ROOTS.DASHBOARD}/live-offers`,
     providerDetails: (id) => `${ROOTS.DASHBOARD}/providers/${id}`,
     providerHub: `${ROOTS.DASHBOARD}/provider-hub`,
     packages: `${ROOTS.DASHBOARD}/packages`, // New route for packages
@@ -290,6 +291,7 @@ export const paths = {
     eventDetails: (id) => `${ROOTS.ADMIN_DASHBOARD}/events/${id}`,
     categories: `${ROOTS.ADMIN_DASHBOARD}/categories`,
     badges: `${ROOTS.ADMIN_DASHBOARD}/badges`,
+    instantBooking: `${ROOTS.ADMIN_DASHBOARD}/instant-booking`,
     tags: `${ROOTS.ADMIN_DASHBOARD}/tags`,
     mail: `${ROOTS.ADMIN_DASHBOARD}/mail`,
     blank: `${ROOTS.ADMIN_DASHBOARD}/blank`,

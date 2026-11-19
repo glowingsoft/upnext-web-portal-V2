@@ -56,6 +56,7 @@ const PackageDetailsPage = lazy(() => import('src/pages/dashboard/active-routes/
 const RevenuePage = lazy(() => import('src/pages/dashboard/active-routes/revenue'));
 const BoostVisibilityPage = lazy(() => import('src/pages/dashboard/active-routes/boost-visibility'));
 const BookingsPage = lazy(() => import('src/pages/dashboard/active-routes/bookings'));
+const LiveOffersPage = lazy(() => import('src/pages/dashboard/active-routes/live-offers'));
 const BookingDetailsPage = lazy(() => import('src/pages/dashboard/active-routes/booking-details'));
 const BookingSuccessPage = lazy(() => import('src/pages/dashboard/active-routes/booking-success'));
 const EventsPage = lazy(() => import('src/pages/dashboard/active-routes/events'));
@@ -167,6 +168,7 @@ export const dashboardRoutes = [
       { path: 'services/:id', element: <ServiceDetailsPage /> },
       // { path: 'sessions', element: <SessionsPage /> },
       { path: 'bookings', element: <BookingsPage /> },
+      { path: 'live-offers', element: <LiveOffersPage /> },
       { path: 'bookings/success/:id', element: <BookingSuccessPage /> },
       { path: 'bookings/:id', element: <BookingDetailsPage /> },
       { path: 'events', element: <EventsPage /> },

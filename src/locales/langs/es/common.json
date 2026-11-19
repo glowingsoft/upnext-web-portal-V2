@@ -1109,5 +1109,9 @@
   "appointmentsToday": "{{count}} citas hoy",
   "appointmentsToday_one": "{{count}} cita hoy",
   "requestsAwaitingConfirmation": "{{count}} solicitudes pendientes de confirmación",
-  "requestsAwaitingConfirmation_one": "{{count}} solicitud pendiente de confirmación"
+  "requestsAwaitingConfirmation_one": "{{count}} solicitud pendiente de confirmación",
+  "cancellationNonRefundable": "No reembolsable",
+  "cancellationNonRefundableDescription": "Los clientes no recuperan su dinero si cancelan.",
+  "cancellationRefundable24h": "Reembolsable hasta 24 horas antes",
+  "cancellationRefundable24hDescription": "Los clientes reciben un reembolso si cancelan al menos 24 horas antes de la cita."
 }

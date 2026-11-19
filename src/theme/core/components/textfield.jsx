@@ -52,9 +52,12 @@ const MuiOutlinedInput = {
    *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
+      [`&:hover:not(.${outlinedInputClasses.error}):not(.${outlinedInputClasses.disabled}) .${outlinedInputClasses.notchedOutline}`]: {
+        borderColor: theme.vars.palette.primary.main,
+      },
       [`&.${outlinedInputClasses.focused}`]: {
         [`& .${outlinedInputClasses.notchedOutline}`]: {
-          borderColor: theme.vars.palette.text.primary,
+          borderColor: theme.vars.palette.primary.main,
         },
       },
       [`&.${outlinedInputClasses.error}`]: {

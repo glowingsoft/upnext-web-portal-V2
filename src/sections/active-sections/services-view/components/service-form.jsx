@@ -25,6 +25,8 @@ import { useUploadS3Mutation } from 'src/store/Reducer/auth';
 import { findOnsitePreferredServiceType } from 'src/utils/preferred-service-type';
 import { useTranslate } from 'src/locales/use-locales';
 import { fData } from 'src/utils/format-number';
+import { CANCELLATION_POLICY_OPTIONS, DEFAULT_CANCELLATION_POLICY } from 'src/utils/cancellation-policy';
+import { CancellationPolicyField } from 'src/components/cancellation-policy-field/cancellation-policy-field';
 
 import { ServiceCategoryField } from './service-category-field';
 import { SetSlotsDialog } from './set-slots-dialog';
@@ -40,13 +42,7 @@ function createServiceSchema(t) {
     category: requiredText(t('serviceCategory')),
     concurrentClients: requiredText(t('numberOfConcurrentClients')),
     price: requiredText(t('price')),
-    latestBookHours: requiredText(t('bookingHoursField')),
-    latestBookMins: requiredText(t('bookingMinutesField')),
-    latestCancelHours: requiredText(t('cancellationHoursField')),
-    latestCancelMins: requiredText(t('cancellationMinutesField')),
-    refundPercentage: requiredText(t('refundPercentageLabel')),
-    refundRules: requiredText(t('rulesForRefund')),
-    autoAccept: zod.boolean(),
+    cancellationPolicy: zod.enum(CANCELLATION_POLICY_OPTIONS.map((option) => option.value)),
     isAvailable: zod.boolean(),
     status: zod.enum(['active', 'inactive']),
   });
@@ -58,13 +54,7 @@ const defaultValues = {
   category: '',
   concurrentClients: '',
   price: '',
-  latestBookHours: '',
-  latestBookMins: '',
-  latestCancelHours: '',
-  latestCancelMins: '',
-  refundPercentage: '',
-  refundRules: '',
-  autoAccept: false,
+  cancellationPolicy: DEFAULT_CANCELLATION_POLICY,
   isAvailable: true,
   status: 'active',
 };
@@ -126,13 +116,7 @@ function mapApiToFormValues(raw) {
     category: raw.category?._id ?? (typeof raw.category === 'string' ? raw.category : ''),
     concurrentClients: raw.concurrentClients != null ? String(raw.concurrentClients) : '',
     price: raw.price != null ? String(raw.price) : '',
-    latestBookHours: raw.howLateCanBook?.hours != null ? String(raw.howLateCanBook.hours) : '0',
-    latestBookMins: raw.howLateCanBook?.mins != null ? String(raw.howLateCanBook.mins) : '0',
-    latestCancelHours: raw.howLateCanCancel?.hours != null ? String(raw.howLateCanCancel.hours) : '0',
-    latestCancelMins: raw.howLateCanCancel?.mins != null ? String(raw.howLateCanCancel.mins) : '0',
-    refundPercentage: raw.refundPercentage != null ? String(raw.refundPercentage) : '',
-    refundRules: raw.refundRules ?? '',
-    autoAccept: Boolean(raw.autoSelect),
+    cancellationPolicy: CANCELLATION_POLICY_OPTIONS.some((option) => option.value === raw.cancellationPolicy) ? raw.cancellationPolicy : DEFAULT_CANCELLATION_POLICY,
     isAvailable: raw.isAvailable !== undefined ? Boolean(raw.isAvailable) : true,
     status: raw.status === 'inactive' ? 'inactive' : 'active',
   };
@@ -264,15 +248,11 @@ export function ServiceForm({ editData, onSubmit, onCancel }) {
         ...(sameAsBusinessHours
           ? { sessionSlotMins: Number(slots?.sessionSlotMins || 30), gapBetweenSlotMins: Number(slots?.gapMins || 0) }
           : { slots: convertSlotsToApi(slots) }),
-        howLateCanBook: { hours: Number(data.latestBookHours), mins: Number(data.latestBookMins) },
-        howLateCanCancel: { hours: Number(data.latestCancelHours), mins: Number(data.latestCancelMins) },
-        refundPercentage: Number(data.refundPercentage),
-        refundRules: data.refundRules,
+        cancellationPolicy: data.cancellationPolicy,
         photos: photoUrls,
         isAvailable: data.isAvailable,
         status: data.status,
         concurrentClients: Number(data.concurrentClients),
-        autoSelect: data.autoAccept,
       };
 
       await onSubmit(payload);
@@ -401,27 +381,10 @@ export function ServiceForm({ editData, onSubmit, onCancel }) {
                 />
 
                 <Box sx={{ gridColumn: '1 / -1' }}>
-                  <SectionHeader title={t('howLateCanSomeoneBook')} />
+                  <SectionHeader title={t('cancellationPolicy', { defaultValue: 'Cancellation policy' })} />
                 </Box>
 
-                <Field.Text name="latestBookHours" label={t('hours')} placeholder={t('egTen')} inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} />
-                <Field.Text name="latestBookMins" label={t('mins')} placeholder={t('egMins30')} inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} />
-
-                <Box sx={{ gridColumn: '1 / -1' }}>
-                  <SectionHeader title={t('howLateCanSomeoneCancel')} />
-                </Box>
-
-                <Field.Text name="latestCancelHours" label={t('hours')} placeholder={t('egTen')} inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} />
-                <Field.Text name="latestCancelMins" label={t('mins')} placeholder={t('egMins30')} inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} />
-
-                <Field.Text
-                  name="refundPercentage"
-                  label={t('refundPercentageLabel')}
-                  placeholder={t('egTen')}
-                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', min: 0, max: 100 }}
-                  sx={{ gridColumn: '1 / -1' }}
-                />
-                <Field.Text name="refundRules" label={t('rulesForRefund')} placeholder={t('egRefundRulesPlaceholder')} multiline rows={3} sx={{ gridColumn: '1 / -1' }} />
+                <CancellationPolicyField sx={{ gridColumn: '1 / -1' }} />
 
                 <Field.Select name="status" label={t('status')} sx={{ maxWidth: 200 }}>
                   <MenuItem value="active">{t('active')}</MenuItem>
@@ -435,19 +398,6 @@ export function ServiceForm({ editData, onSubmit, onCancel }) {
                       <SwitchLabelWithTooltip
                         label={t('available')}
                         tooltip={t('serviceAvailableTooltip')}
-                      />
-                    }
-                    labelPlacement="start"
-                    sx={{ mx: 0, width: 1, maxWidth: 160, justifyContent: 'space-between' }}
-                    slotProps={{ switch: { color: 'primary' } }}
-                  />
-
-                  <Field.Switch
-                    name="autoAccept"
-                    label={
-                      <SwitchLabelWithTooltip
-                        label={t('autoAccept')}
-                        tooltip={t('autoAcceptTooltip')}
                       />
                     }
                     labelPlacement="start"

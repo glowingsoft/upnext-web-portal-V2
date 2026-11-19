@@ -26,12 +26,13 @@ import {
   useGetAdminBookingsQuery,
   useGetBusinessBookingsQuery,
   useGetCustomerBookingsQuery,
-  useGetMyBookingsQuery,
   useRejectBookingMutation,
 } from 'src/store/Reducer/bookings-api';
 import { useGetBusinessBookingsByAdminQuery, useGetBusinessBookingsPublicQuery } from 'src/store/Reducer/businesses-api';
 
 import { SessionTableRow } from './sessions-table-row';
+import { useGetInstantBookingsQuery } from 'src/store/Reducer/instant-bookings-api';
+import { INSTANT_STATUS_TABS, getInstantStatusMeta } from 'src/utils/instant-booking-status';
 import { normalizeBooking } from './utils/booking-normalizer';
 
 // ----------------------------------------------------------------------
@@ -110,16 +111,18 @@ export function BookingsListContent({ provider = null, client = null, isPublicVi
   const showProviderColumn = !provider && !isProvider;
 
   const statusOptions = useMemo(
-    () => [
+    () => apiMode === 'user' ? [
+      { value: 'all', label: t('all'), color: 'default' },
+      ...INSTANT_STATUS_TABS.map((value) => ({ value, label: getInstantStatusMeta(value).label, color: getInstantStatusMeta(value).color })),
+    ] : [
       { value: 'all', label: t('all'), color: 'default' },
       { value: 'requested', label: t('requested'), color: 'warning' },
-      { value: 'scheduled', label: t('scheduled'), color: 'info' },
-      { value: 'ongoing', label: t('ongoing'), color: 'primary' },
+      { value: 'ongoing', label: getInstantStatusMeta('ongoing').label, color: 'primary' },
       { value: 'completed', label: t('completed'), color: 'success' },
       { value: 'expired', label: t('expired'), color: 'default' },
       { value: 'canceled', label: t('cancelled'), color: 'error' },
     ],
-    [t]
+    [apiMode, t]
   );
 
   const scopeOptions = useMemo(
@@ -198,7 +201,7 @@ export function BookingsListContent({ provider = null, client = null, isPublicVi
       { ...params, userId: client?._id },
       { ...options, skip: apiMode !== 'business' }
     );
-    const myResult = useGetMyBookingsQuery(params, { ...options, skip: apiMode !== 'user' });
+    const myResult = useGetInstantBookingsQuery(params, { ...options, skip: apiMode !== 'user' });
     const customerResult = useGetCustomerBookingsQuery(
       { ...params, id: client?._id },
       { ...options, skip: apiMode !== 'customer' }
@@ -229,6 +232,7 @@ export function BookingsListContent({ provider = null, client = null, isPublicVi
     itemsPerPage,
     searchDisplayValue,
     dataList,
+    totalRecords,
     meta,
     isLoading,
     isFetching,
@@ -271,21 +275,23 @@ export function BookingsListContent({ provider = null, client = null, isPublicVi
   const getStatusCount = useCallback(
     (status) => {
       if (status === 'all') {
-        return meta?.counts?.all ?? meta?.statuses?.all ?? meta?.totalRecords ?? meta?.total ?? dataList.length ?? 0;
+        return meta?.counts?.all ?? meta?.statuses?.all ?? meta?.totalRecords ?? meta?.total ?? totalRecords ?? dataList.length ?? 0;
       }
       return meta?.counts?.[status] ?? meta?.statuses?.[status] ?? 0;
     },
-    [dataList.length, meta]
+    [dataList.length, meta, totalRecords]
   );
 
   const rows = apiRows;
-  const totalCount = meta?.totalRecords ?? meta?.total ?? apiRows.length;
+  const totalCount = meta?.totalRecords ?? meta?.total ?? totalRecords ?? apiRows.length;
 
   const statusFilterField = useMemo(() => sessionFilterFields.find((f) => f.type === 'status'), [sessionFilterFields]);
   const toolbarFilterFields = useMemo(() => sessionFilterFields.filter((f) => f.type !== 'status'), [sessionFilterFields]);
 
   const handleOpenView = (row) => {
-    const detailPath = readOnly ? paths.adminDashboard.bookingDetails(row._id) : paths.dashboard.bookingDetails(row._id);
+    const detailPath = readOnly
+      ? paths.adminDashboard.bookingDetails(row._id)
+      : paths.dashboard.bookingDetails(row._id, apiMode === 'user' ? 'instant' : row.mode);
     router.push(detailPath);
   };
 

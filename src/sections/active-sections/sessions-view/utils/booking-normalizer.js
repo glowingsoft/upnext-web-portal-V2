@@ -188,6 +188,8 @@ export function normalizeBooking(raw = {}) {
       businessInfo.location?.address || providerInfo.location?.address || raw.venueLocation
     ),
     target: Array.isArray(raw.target) ? raw.target : raw.target ? [raw.target] : [],
+    mode: raw.mode || null,
+    instant: raw.mode === 'instant' ? raw : null,
   };
 }
 

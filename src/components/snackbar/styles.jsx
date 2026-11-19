@@ -81,7 +81,11 @@ export const StyledToaster = styled(Toaster)(({ theme }) => {
     /*
      * Buttons
      */
-    [`& .${toasterClasses.actionButton}`]: {},
+    [`& .${toasterClasses.actionButton}`]: {
+      flexShrink: 0,
+      minWidth: 'max-content',
+      whiteSpace: 'nowrap',
+    },
     [`& .${toasterClasses.cancelButton}`]: {},
     [`& .${toasterClasses.closeButton}`]: {
       top: 0,

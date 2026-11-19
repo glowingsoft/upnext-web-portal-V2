@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { fToNow } from 'src/utils/format-time';
+import { fTime, fToNow } from 'src/utils/format-time';
 import { useTranslate } from 'src/locales/use-locales';
 
 import { Iconify } from 'src/components/iconify';
@@ -24,18 +24,17 @@ const TICK_ICON = {
   read: { icon: 'solar:check-read-bold', color: 'primary.main' },
 };
 
-function Timestamp({ time, visible }) {
+function Timestamp({ time, title }) {
   return (
     <Typography
       noWrap
       variant="caption"
+      title={title}
       sx={{
-        fontSize: 12,
+        fontSize: 11,
         color: 'text.disabled',
         whiteSpace: 'nowrap',
         flexShrink: 0,
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.15s ease',
       }}
     >
       {time}
@@ -199,7 +198,7 @@ export function ChatMessageItem({ message, myId, otherUser, isFirstOfGroup = tru
       <MessageRow me={me}>
         {!me && (
           <Box sx={{ width: 32, flexShrink: 0 }}>
-            {isFirstOfGroup && <Avatar alt={otherUser?.name} src={otherUser?.avatarUrl} sx={{ width: 32, height: 32 }} />}
+            {isFirstOfGroup && <Avatar alt={otherUser?.name} src={otherUser?.avatarUrl || undefined} sx={{ width: 32, height: 32, fontSize: 14 }}>{String(otherUser?.name || '?').trim().charAt(0).toUpperCase()}</Avatar>}
           </Box>
         )}
 
@@ -233,7 +232,7 @@ export function ChatMessageItem({ message, myId, otherUser, isFirstOfGroup = tru
               )}
             </MessageBubble>
 
-            <Timestamp time={fToNow(message.createdAt)} visible={hovered} />
+            <Timestamp time={fTime(message.createdAt, 'h:mm a')} title={fToNow(message.createdAt)} />
           </Stack>
         </Stack>
 

@@ -28,6 +28,8 @@ const STATUS_COLOR = {
   canceled: 'error',
 };
 
+import { getInstantStatusMeta } from 'src/utils/instant-booking-status';
+
 export const SessionTableRow = memo(
   ({ row, serialNumber, onViewRow, onAcceptRow, onRejectRow, readOnly = false, showClientColumn = true, showProviderColumn = true }) => {
     const { t } = useTranslate();
@@ -130,9 +132,15 @@ export const SessionTableRow = memo(
 
         {/* Status */}
         <TableCell>
-          <Label variant="soft" color={STATUS_COLOR[row.status] ?? 'default'} sx={{ textTransform: 'capitalize' }}>
-            {t(row.status)}
-          </Label>
+          {row.mode === 'instant' ? (
+            <Label variant="soft" color={getInstantStatusMeta(row.status).color} sx={{ whiteSpace: 'nowrap' }}>
+              {getInstantStatusMeta(row.status).label}
+            </Label>
+          ) : (
+            <Label variant="soft" color={STATUS_COLOR[row.status] ?? 'default'} sx={{ textTransform: 'capitalize' }}>
+              {row.status === 'ongoing' ? getInstantStatusMeta('ongoing').label : t(row.status)}
+            </Label>
+          )}
         </TableCell>
 
         {/* Payment Status */}

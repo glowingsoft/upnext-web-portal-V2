@@ -12,13 +12,20 @@ import { varAlpha } from 'src/theme/styles';
 import { fCurrency } from 'src/utils/format-number';
 import { useGetSlotsQuery } from 'src/store/Reducer/bookings-api';
 import { PayNowDialog } from './pay-now-dialog';
+import { InstantBookingDialog } from 'src/sections/instant-request/instant-booking-dialog';
 
 dayjs.extend(customParseFormat);
 
 const API_SLOT_SCOPES = { service: 'service', package: 'package' };
 const TIME_PARSE_FORMATS = ['HH:mm', 'H:mm', 'h:mm A', 'hh:mm A'];
 
-export function BookingScheduleDialogs({ bookingItem, title, onCloseBooking, onBooked, type, autoAccept = false, initialPromoCode }) {
+const INSTANT_BOOKING_ENABLED = import.meta.env.VITE_INSTANT_BOOKING !== 'false';
+
+export function BookingScheduleDialogs(props) {
+  return INSTANT_BOOKING_ENABLED ? <InstantBookingDialog {...props} /> : <LegacyBookingScheduleDialogs {...props} />;
+}
+
+function LegacyBookingScheduleDialogs({ bookingItem, title, onCloseBooking, onBooked, type, autoAccept = false, initialPromoCode }) {
   const { t } = useTranslate();
   const router = useRouter();
 
@@ -33,6 +40,7 @@ export function BookingScheduleDialogs({ bookingItem, title, onCloseBooking, onB
   const [payNowOpen, setPayNowOpen] = useState(false);
 
   const [paymentBooking, setPaymentBooking] = useState(null);
+
 
   useEffect(() => {
     if (bookingItem) {

@@ -20,6 +20,9 @@ import { useSettingsContext } from 'src/components/settings';
 import { useSelector } from 'react-redux';
 
 import { useChatSocketContext } from 'src/sections/chat/chat-socket-provider';
+import { LiveOffersContext, useLiveOffersState } from 'src/sections/live-offers/live-offers-context';
+import { IncomingOfferNotification } from 'src/sections/live-offers/incoming-offer-notification';
+import { ActiveRequestPill } from 'src/sections/instant-request/active-request-pill';
 
 import { Main } from './main';
 import { NavMobile } from './nav-mobile';
@@ -54,6 +57,10 @@ export function DashboardLayout({ sx, children, data }) {
 
   const { totalUnreadCount } = useChatSocketContext();
 
+  const isProviderUser = user?.permission === 2 && (user?.accountState?.userType === 'provider' || user?.accountState?.userType === 'business');
+  const liveOffers = useLiveOffersState(isProviderUser);
+  const incomingOffersCount = liveOffers.counts.incoming;
+
   // const navData = data?.nav ?? getDashboardNavData(t);
 
   const navData = useMemo(() => {
@@ -74,13 +81,22 @@ export function DashboardLayout({ sx, children, data }) {
       base = data?.nav ?? getDashboardNavData(t);
     }
 
-    if (!totalUnreadCount) return base;
-
+    if (!totalUnreadCount && !incomingOffersCount) return base;
 
     return base.map((section) => ({
       ...section,
-      items: section.items.map((item) =>
-        item.path === paths.dashboard.chat
+      items: section.items.map((item) => {
+        if (item.path === paths.dashboard.liveOffers && incomingOffersCount) {
+          return {
+            ...item,
+            info: (
+              <Label color="error" variant="filled" sx={{ height: 16, minWidth: 16, px: 0.5, fontSize: 10, lineHeight: 1 }}>
+                {incomingOffersCount > 99 ? '99+' : incomingOffersCount}
+              </Label>
+            ),
+          };
+        }
+        return item.path === paths.dashboard.chat && totalUnreadCount
           ? {
             ...item,
             info: (
@@ -99,10 +115,10 @@ export function DashboardLayout({ sx, children, data }) {
               </Label>
             ),
           }
-          : item
-      ),
+          : item;
+      }),
     }));
-  }, [user?.permission, user?.accountState?.userType, data?.nav, t, totalUnreadCount]);
+  }, [user?.permission, user?.accountState?.userType, data?.nav, t, totalUnreadCount, incomingOffersCount]);
 
   const isAdmin = user?.permission === 1;
   const isProvider = user?.permission === 2 && (user?.accountState?.userType === 'provider' || user?.accountState?.userType === 'business');
@@ -151,7 +167,7 @@ export function DashboardLayout({ sx, children, data }) {
   const isNavVertical = isNavMini || settings.navLayout === 'vertical';
 
   return (
-    <>
+    <LiveOffersContext.Provider value={liveOffers}>
       <NavMobile data={navData} open={mobileNavOpen.value} onClose={mobileNavOpen.onFalse} cssVars={navColorVars.section} />
 
       <LayoutSection
@@ -274,7 +290,10 @@ export function DashboardLayout({ sx, children, data }) {
       >
         <Main isNavHorizontal={isNavHorizontal}>{children}</Main>
       </LayoutSection>
-    </>
+
+      {isProviderUser && <IncomingOfferNotification />}
+      {user?.permission === 2 && (user?.accountState?.userType === 'user' || user?.accountState?.userType === 'customer') && <ActiveRequestPill />}
+    </LiveOffersContext.Provider>
   );
 }
 

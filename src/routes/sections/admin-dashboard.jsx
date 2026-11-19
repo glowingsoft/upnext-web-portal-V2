@@ -79,6 +79,7 @@ const EventDetailsPage = lazy(() => import('src/pages/dashboard/active-routes/ev
 const CategoriesPage = lazy(() => import('src/pages/dashboard/active-routes/categories'));
 const BadgesPage = lazy(() => import('src/pages/dashboard/active-routes/badges'));
 const TagsPage = lazy(() => import('src/pages/dashboard/active-routes/tags'));
+const InstantBookingPage = lazy(() => import('src/pages/dashboard/active-routes/instant-booking'));
 
 // ----------------------------------------------------------------------
 
@@ -148,6 +149,7 @@ export const adminDashboardRoutes = [
       { path: 'categories', element: <CategoriesPage /> },
       { path: 'tags', element: <TagsPage /> },
       { path: 'badges', element: <BadgesPage /> },
+      { path: 'instant-booking', element: <InstantBookingPage /> },
 
       {
         path: 'user',

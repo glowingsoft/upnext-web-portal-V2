@@ -1109,5 +1109,9 @@
   "appointmentsToday": "{{count}} rendez-vous aujourd'hui",
   "appointmentsToday_one": "{{count}} rendez-vous aujourd'hui",
   "requestsAwaitingConfirmation": "{{count}} demandes en attente de confirmation",
-  "requestsAwaitingConfirmation_one": "{{count}} demande en attente de confirmation"
+  "requestsAwaitingConfirmation_one": "{{count}} demande en attente de confirmation",
+  "cancellationNonRefundable": "Non remboursable",
+  "cancellationNonRefundableDescription": "Les clients ne sont pas remboursés s'ils annulent.",
+  "cancellationRefundable24h": "Remboursable jusqu'à 24 heures avant",
+  "cancellationRefundable24hDescription": "Les clients sont remboursés s’ils annulent au moins 24 heures avant le rendez-vous."
 }

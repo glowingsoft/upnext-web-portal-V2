@@ -26,8 +26,18 @@ const LEGAL_TYPE_TO_URL = {
 export const settingsApi = createApi({
   reducerPath: 'settingsApi',
   baseQuery: createCustomFetchBaseQuery(),
-  tagTypes: ['legalContent', 'faq'],
+  tagTypes: ['legalContent', 'faq', 'instantSettings'],
   endpoints: (builder) => ({
+    getInstantSettings: builder.query({
+      query: () => ({ url: API_ROUTES.ADMIN_INSTANT_SETTINGS, method: 'GET' }),
+      providesTags: ['instantSettings'],
+    }),
+
+    updateInstantSettings: builder.mutation({
+      query: (body) => ({ url: API_ROUTES.ADMIN_INSTANT_SETTINGS, method: 'PUT', body }),
+      invalidatesTags: ['instantSettings'],
+    }),
+
     getAdminLegalContent: builder.query({
       query: (type) => ({
         url: LEGAL_TYPE_TO_ADMIN_URL[type] || LEGAL_TYPE_TO_ADMIN_URL.about,
@@ -115,6 +125,8 @@ export const settingsApi = createApi({
 });
 
 export const {
+  useGetInstantSettingsQuery,
+  useUpdateInstantSettingsMutation,
   useGetAdminLegalContentQuery,
   useCreateSettingsMutation,
   useUpdateSettingsMutation,

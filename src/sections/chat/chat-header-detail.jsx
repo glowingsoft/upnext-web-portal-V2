@@ -112,7 +112,7 @@ export function ChatHeaderDetail({
     // sx={{ cursor: 'pointer', ':hover': { textDecoration: 'underline', textUnderlineOffset: '3px' } }}
     >
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
-        <Avatar src={otherUser?.avatarUrl} alt={otherUser?.name} />
+        <Avatar src={otherUser?.avatarUrl || undefined} alt={otherUser?.name}>{String(otherUser?.name || '?').trim().charAt(0).toUpperCase()}</Avatar>
         <Box
           sx={{
             position: 'absolute',

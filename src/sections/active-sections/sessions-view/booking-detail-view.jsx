@@ -14,11 +14,12 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { m } from 'framer-motion';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
-import { usePathname, useRouter } from 'src/routes/hooks';
+import { usePathname, useRouter, useSearchParams } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
+import { useChatSocketContext } from 'src/sections/chat/chat-socket-provider';
 
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { Iconify } from 'src/components/iconify';
@@ -47,7 +48,23 @@ import { CANCEL_RED, CancelBookingDialog } from './components/cancel-booking-dia
 import { PayNowDialog } from './components/pay-now-dialog';
 import { ReviewDialog } from './components/review-dialog';
 import { normalizeBooking } from './utils/booking-normalizer';
+import { INSTANT_STATUS_META, humanizeStatus } from 'src/utils/instant-booking-status';
 import { SuggestedServicesSection } from './components/suggested-services-section';
+import { InstantRequestPanel } from 'src/sections/instant-request/instant-request-panel';
+import { CancelInstantBookingDialog } from 'src/sections/instant-request/cancel-instant-booking-dialog';
+import { InstantCancellationSummary } from 'src/sections/instant-request/instant-cancellation-summary';
+import { ProviderOfferTimer } from 'src/sections/instant-request/provider-offer-timer';
+import {
+  instantBookingsApi,
+  useAcceptInstantOfferMutation,
+  useCancelInstantBookingMutation,
+  useCompleteInstantBookingMutation,
+  useDeclineInstantBookingMutation,
+  useCustomerArrivedInstantBookingMutation,
+  useGetInstantBookingQuery,
+  useStartInstantBookingMutation,
+} from 'src/store/Reducer/instant-bookings-api';
+import { getLocalInstantDeadline } from 'src/utils/instant-booking-time';
 
 const STATUS_COLOR = {
   requested: 'warning',
@@ -57,6 +74,23 @@ const STATUS_COLOR = {
   expired: 'default',
   canceled: 'error',
 };
+
+function formatInstantWhen(raw) {
+  const toTime = (value) => {
+    const [h, m] = String(value || '').split(':').map(Number);
+    if (Number.isNaN(h)) return value || '';
+    const d = new Date(2000, 0, 1, h, m || 0);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+  const day = raw.date ? new Date(String(raw.date).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  const time = raw.slot?.open ? `${toTime(raw.slot.open)} – ${toTime(raw.slot.close)}` : '';
+  return [day, time].filter(Boolean).join(' · ');
+}
+
+function shortBookingRef(value) {
+  const ref = String(value || '').replace(/^[A-Z]{1,3}-/, '').split('-')[0];
+  return ref ? ref.toUpperCase() : '';
+}
 
 const REMINDER_TYPES = [
   { type: 'slot', icon: 'solar:calendar-mark-bold', labelKey: 'sendSlotReminder' },
@@ -75,6 +109,225 @@ function normalizeSuggestedService(item) {
   };
 }
 
+function formatCancellationCents(cents, currency, unavailable) {
+  const amount = Number(cents);
+  if (cents == null || !Number.isFinite(amount)) return unavailable;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(amount / 100);
+}
+
+const INSTANT_STATUS_GUIDANCE = {
+  requested: {
+    severity: 'info',
+    customer: {
+      title: ['instantRequestedCustomerTitle', 'Request in progress — what happens next?'],
+      intro: ['instantRequestedCustomerIntro', 'We are contacting available providers for your appointment.'],
+      steps: [
+        ['instantRequestedCustomerStep1', 'Watch this page for provider responses and booking updates.'],
+        ['instantRequestedCustomerStep2', 'If a request expires or is declined, you can try again or choose another provider.'],
+      ],
+    },
+    provider: {
+      title: ['instantRequestedProviderTitle', 'Instant request in progress'],
+      intro: ['instantRequestedProviderIntro', 'Review the request and respond before the offer expires.'],
+      steps: [
+        ['instantRequestedProviderStep1', 'Check the service, appointment time, and customer details.'],
+        ['instantRequestedProviderStep2', 'Accept only if you can provide the service at the requested time.'],
+      ],
+    },
+  },
+  awaiting_customer_decision: {
+    severity: 'info',
+    customer: {
+      title: ['instantDecisionCustomerTitle', 'Provider response — your decision is needed'],
+      intro: ['instantDecisionCustomerIntro', 'A provider is waiting for your response.'],
+      steps: [
+        ['instantDecisionCustomerStep1', 'Review the provider and offer details.'],
+        ['instantDecisionCustomerStep2', 'Accept or decline before the offer expires.'],
+      ],
+    },
+    provider: {
+      title: ['instantDecisionProviderTitle', 'Waiting for customer decision'],
+      intro: ['instantDecisionProviderIntro', 'The customer is reviewing your offer.'],
+      steps: [
+        ['instantDecisionProviderStep1', 'Wait for the customer to accept or decline.'],
+        ['instantDecisionProviderStep2', 'The booking is not confirmed until the status changes to Confirmed.'],
+      ],
+    },
+  },
+  accepted_awaiting_payment: {
+    severity: 'warning',
+    customer: {
+      title: ['instantPaymentPendingCustomerTitle', 'Provider accepted — payment pending'],
+      intro: ['instantPaymentPendingCustomerIntro', 'Your booking is not confirmed until the payment step is complete.'],
+      steps: [
+        ['instantPaymentPendingCustomerStep1', 'Complete any payment action shown on this page.'],
+        ['instantPaymentPendingCustomerStep2', 'Wait for the booking status to change to Confirmed before attending.'],
+      ],
+    },
+    provider: {
+      title: ['instantPaymentPendingProviderTitle', 'Waiting for customer payment'],
+      intro: ['instantPaymentPendingProviderIntro', 'The booking is not confirmed until the customer payment step is complete.'],
+      steps: [
+        ['instantPaymentPendingProviderStep1', 'Wait for the status to change to Confirmed before starting the service.'],
+        ['instantPaymentPendingProviderStep2', 'Check the booking for payment and status updates.'],
+      ],
+    },
+  },
+  confirmed: {
+    severity: 'success',
+    customer: {
+      title: ['instantConfirmedNextStepsTitle', 'Booking confirmed — what happens next?'],
+      intro: ['instantConfirmedCustomerIntro', 'Your appointment is confirmed. Here are the next steps:'],
+      steps: [
+        ['instantConfirmedCustomerStep1', 'Review the appointment date, time, service, and provider details above.'],
+        ['instantConfirmedCustomerStep2', 'Message your provider if you need to coordinate arrival, access, or other details.'],
+        ['instantConfirmedCustomerStep3', 'Be ready at the scheduled time. Check Booking overview for payment and cancellation details.'],
+      ],
+    },
+    provider: {
+      title: ['instantConfirmedNextStepsTitle', 'Booking confirmed — what happens next?'],
+      intro: ['instantConfirmedProviderIntro', 'The customer’s appointment is confirmed. Prepare for the scheduled service:'],
+      steps: [
+        ['instantConfirmedProviderStep1', 'Review the service, appointment time, and customer details.'],
+        ['instantConfirmedProviderStep2', 'Message the customer if you need to coordinate access or special requirements.'],
+        ['instantConfirmedProviderStep3', 'After the customer marks arrival, use Start to begin the session.'],
+      ],
+    },
+  },
+  ongoing: {
+    severity: 'info',
+    customer: {
+      title: ['instantOngoingCustomerTitle', 'Your session is in progress'],
+      intro: ['instantOngoingCustomerIntro', 'Your provider has started the appointment.'],
+      steps: [
+        ['instantOngoingCustomerStep1', 'Message your provider if you need help during the service.'],
+        ['instantOngoingCustomerStep2', 'Review the booking overview for payment and service details.'],
+      ],
+    },
+    provider: {
+      title: ['instantOngoingProviderTitle', 'Session in progress'],
+      intro: ['instantOngoingProviderIntro', 'The appointment is underway.'],
+      steps: [
+        ['instantOngoingProviderStep1', 'Complete the booked service and keep the customer informed.'],
+        ['instantOngoingProviderStep2', 'Mark the booking complete when the service is finished.'],
+      ],
+    },
+  },
+  completed: {
+    severity: 'success',
+    customer: {
+      title: ['instantCompletedCustomerTitle', 'Session completed'],
+      intro: ['instantCompletedCustomerIntro', 'Your instant booking is complete.'],
+      steps: [
+        ['instantCompletedCustomerStep1', 'Review the final payment and booking details.'],
+        ['instantCompletedCustomerStep2', 'Share your experience by leaving a review.'],
+      ],
+    },
+    provider: {
+      title: ['instantCompletedProviderTitle', 'Booking completed'],
+      intro: ['instantCompletedProviderIntro', 'The service has been marked complete.'],
+      steps: [
+        ['instantCompletedProviderStep1', 'Review payout and deductions in the booking overview.'],
+        ['instantCompletedProviderStep2', 'Follow up with the customer if needed.'],
+      ],
+    },
+  },
+  canceled: {
+    severity: 'warning',
+    customer: {
+      title: ['instantCanceledCustomerTitle', 'Booking canceled'],
+      intro: ['instantCanceledCustomerIntro', 'This instant booking is no longer active.'],
+      steps: [
+        ['instantCanceledCustomerStep1', 'Review the cancellation and refund details in the booking overview.'],
+        ['instantCanceledCustomerStep2', 'Create a new request if you still need this service.'],
+      ],
+    },
+    provider: {
+      title: ['instantCanceledProviderTitle', 'Booking canceled'],
+      intro: ['instantCanceledProviderIntro', 'This instant booking is no longer active.'],
+      steps: [
+        ['instantCanceledProviderStep1', 'Review the cancellation reason and any penalty in the booking overview.'],
+        ['instantCanceledProviderStep2', 'Do not attend or perform the canceled service.'],
+      ],
+    },
+  },
+  expired: {
+    severity: 'warning',
+    customer: {
+      title: ['instantExpiredCustomerTitle', 'Request expired'],
+      intro: ['instantExpiredCustomerIntro', 'No provider accepted this request before it expired.'],
+      steps: [
+        ['instantExpiredCustomerStep1', 'Send the request again or choose another provider.'],
+        ['instantExpiredCustomerStep2', 'Check the appointment details before retrying.'],
+      ],
+    },
+    provider: {
+      title: ['instantExpiredProviderTitle', 'Offer expired'],
+      intro: ['instantExpiredProviderIntro', 'This request is no longer available to accept.'],
+      steps: [
+        ['instantExpiredProviderStep1', 'No action is needed for this expired offer.'],
+        ['instantExpiredProviderStep2', 'New booking requests will appear in Live Booking Offers.'],
+      ],
+    },
+  },
+};
+
+function InstantBookingStatusGuidance({ status, isCustomer, t }) {
+  const guidance = INSTANT_STATUS_GUIDANCE[status];
+  if (!guidance) return null;
+
+  const copy = guidance[isCustomer ? 'customer' : 'provider'];
+  const statusColor = INSTANT_STATUS_META[status]?.color;
+  const alertSeverity = statusColor === 'primary' ? 'info' : guidance.severity;
+  const resolveText = ([key, fallback]) => t(key, { defaultValue: fallback });
+
+  return (
+    <Alert
+      severity={alertSeverity}
+      icon={
+        <Iconify
+          icon={
+            status === 'ongoing'
+              ? 'solar:play-circle-bold'
+              : guidance.severity === 'success'
+                ? 'solar:check-circle-bold'
+                : 'solar:info-circle-bold'
+          }
+        />
+      }
+      sx={{
+        mb: 2,
+        ...(['success', 'warning', 'info'].includes(alertSeverity) && {
+          bgcolor: (theme) => varAlpha(theme.vars.palette[alertSeverity].mainChannel, 0.08),
+          color: `${alertSeverity}.dark`,
+          border: (theme) => `1px solid ${varAlpha(theme.vars.palette[alertSeverity].mainChannel, 0.2)}`,
+          '& .MuiAlert-icon': { color: `${alertSeverity}.main` },
+        }),
+        ...(statusColor === 'primary' && {
+          bgcolor: (theme) => varAlpha(theme.vars.palette.primary.mainChannel, 0.12),
+          color: 'primary.dark',
+          border: (theme) => `1px solid ${varAlpha(theme.vars.palette.primary.mainChannel, 0.2)}`,
+          '& .MuiAlert-icon': { color: 'primary.main' },
+        }),
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+        {resolveText(copy.title)}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 0.5 }}>
+        {resolveText(copy.intro)}
+      </Typography>
+      <Stack component="ol" spacing={0.5} sx={{ mt: 1, mb: 0, pl: 2.5 }}>
+        {copy.steps.map(([key, fallback]) => (
+          <Typography key={key} component="li" variant="body2">
+            {resolveText([key, fallback])}
+          </Typography>
+        ))}
+      </Stack>
+    </Alert>
+  );
+}
+
 function formatCountdown(totalSeconds) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const days = Math.floor(safeSeconds / 86400);
@@ -87,7 +340,7 @@ function formatCountdown(totalSeconds) {
   return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
 }
 
-export const BookingDetailView = memo(({ booking, readOnly = false }) => {
+export const BookingDetailView = memo(({ booking, readOnly = false, instantOfferStatus, isRefreshing = false }) => {
   const { t } = useTranslate();
   const router = useRouter();
   const userState = useSelector((state) => state.user);
@@ -104,18 +357,29 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   const [sessionReview, setSessionReview] = useState(null);
   const [bookingStatus, setBookingStatus] = useState(booking.status);
+  const [instantCancelOpen, setInstantCancelOpen] = useState(false);
+  const [instantArrivalActionDone, setInstantArrivalActionDone] = useState(false);
+  const [instantNow, setInstantNow] = useState(() => Date.now());
   const [paymentStatus, setPaymentStatus] = useState(booking.paymentStatus);
   const [cancellationReason, setCancellationReason] = useState(booking.cancel?.reason ?? booking.cancellationReason ?? '');
   const [coverLoadFailed, setCoverLoadFailed] = useState(false);
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [selectedReminderType, setSelectedReminderType] = useState(REMINDER_TYPES[0].type);
 
-  const [acceptBooking, { isLoading: isAccepting }] = useAcceptBookingMutation();
-  const [rejectBooking, { isLoading: isRejecting }] = useRejectBookingMutation();
+  const [acceptBooking, { isLoading: isAcceptingRegular }] = useAcceptBookingMutation();
+  const [rejectBooking, { isLoading: isRejectingRegular }] = useRejectBookingMutation();
+  const [acceptInstantOffer, { isLoading: isAcceptingInstant }] = useAcceptInstantOfferMutation();
+  const [declineInstantBooking, { isLoading: isDecliningInstant }] = useDeclineInstantBookingMutation();
+  const isRejecting = isRejectingRegular || isDecliningInstant;
+  const isAccepting = isAcceptingRegular || isAcceptingInstant;
   const [cancelBooking, { isLoading: isCanceling }] = useCancelBookingMutation();
   const [completeBooking, { isLoading: isCompleting }] = useCompleteBookingMutation();
   const [sendBookingReminder, { isLoading: isSendingReminder }] = useSendBookingReminderMutation();
   const [startBooking, { isLoading: isStarting }] = useStartBookingMutation();
+  const [cancelInstantBooking, { isLoading: isCancelingInstant }] = useCancelInstantBookingMutation();
+  const [startInstantBooking, { isLoading: isStartingInstant }] = useStartInstantBookingMutation();
+  const [customerArrivedInstantBooking, { isLoading: isMarkingInstantArrival }] = useCustomerArrivedInstantBookingMutation();
+  const [completeInstantBooking, { isLoading: isCompletingInstant }] = useCompleteInstantBookingMutation();
 
   const [secondsUntilCanStart, setSecondsUntilCanStart] = useState(booking.timer?.secondsUntilCanStart ?? null);
 
@@ -163,16 +427,53 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
     return () => clearInterval(intervalId);
   }, [booking._id, booking.paymentFixDeadline]);
 
+  useEffect(() => {
+    if (!booking.instant?.flow?.appointmentStart) return undefined;
+    const intervalId = setInterval(() => setInstantNow(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, [booking._id, booking.instant?.flow?.appointmentStart]);
+
+  useEffect(() => {
+    setInstantArrivalActionDone(false);
+  }, [booking._id]);
+
   // requested   — customer: withdraw request (cancel API) · provider: accept/reject
   // scheduled   — customer: cancel booking · provider: send reminder
   // ongoing     — customer: nothing · provider: complete
   // completed   — both: review section (add on customer side, view/empty-state on provider side)
   // canceled    — both: cancellation reason
   // expired     — details + "Expired" label only, no actions
-  const showCustomerCancel = isCustomer && bookingStatus === 'scheduled';
-  const showCustomerWithdrawRequest = isCustomer && bookingStatus === 'requested';
+  const isInstant = Boolean(booking.instant);
+  const instantAppointmentStart = booking.instant?.flow?.appointmentStart || booking.flow?.appointmentStart;
+  const instantAppointmentStartMs = instantAppointmentStart ? Date.parse(instantAppointmentStart) : NaN;
+  const instantArrivalAvailable =
+    Boolean(booking.canStart || booking.instant?.canStart) ||
+    (Number.isFinite(instantAppointmentStartMs) && instantNow >= instantAppointmentStartMs - 5 * 60 * 1000);
+  const customerArrived = Boolean(
+    booking.instant?.checkIns?.customerArrived ||
+      booking.checkIns?.customerArrived ||
+      booking.instant?.customerArrived ||
+      booking.customerArrived ||
+      booking.instant?.flow?.customerArrived ||
+      instantArrivalActionDone
+  );
+  const showInstantArrived =
+    isInstant &&
+    bookingStatus === 'confirmed' &&
+    instantArrivalAvailable &&
+    !customerArrived &&
+    (isCustomer || isProvider);
+  const showInstantProviderStart =
+    isInstant && isProvider && bookingStatus === 'confirmed' && instantArrivalAvailable && customerArrived;
+  const showInstantArrivalBadge =
+    isInstant && customerArrived && ['confirmed', 'ongoing'].includes(bookingStatus) && (isCustomer || isProvider);
+  const showInstantStatusGuidance =
+    isInstant && (isCustomer || isProvider) && Boolean(INSTANT_STATUS_GUIDANCE[bookingStatus]);
+  const showInstantCancel = isInstant && ['accepted_awaiting_payment', 'confirmed'].includes(bookingStatus) && (isCustomer || isProvider);
+  const showCustomerCancel = isCustomer && !isInstant && bookingStatus === 'scheduled';
+  const showCustomerWithdrawRequest = isCustomer && !isInstant && bookingStatus === 'requested';
   const isPaymentFixRequired = paymentStatus === 'requires_payment_fix';
-  const showCustomerPayNow = isCustomer && (paymentStatus === 'pending' || isPaymentFixRequired) && (bookingStatus === 'requested' || bookingStatus === 'scheduled');
+  const showCustomerPayNow = isCustomer && !isInstant && (paymentStatus === 'pending' || isPaymentFixRequired) && (bookingStatus === 'requested' || bookingStatus === 'scheduled');
   const showProviderAcceptReject = isProvider && bookingStatus === 'requested';
   const showProviderComplete = isProvider && bookingStatus === 'ongoing';
   const showReminder = isProvider && bookingStatus === 'scheduled';
@@ -182,10 +483,19 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   // canStart/timer only appear on the booking detail response while status === 'scheduled'.
 
-  const showProviderStart = isProvider && bookingStatus === 'scheduled' && booking.timer != null;
-  const canStartNow = Boolean(booking.canStart) || secondsUntilCanStart === 0;
+  const showProviderStart =
+    (isProvider && bookingStatus === 'scheduled' && booking.timer != null) || showInstantProviderStart;
+  const canStartNow = Boolean(booking.canStart) || secondsUntilCanStart === 0 || showInstantProviderStart;
 
-  const isProcessing = isAccepting || isRejecting || isCanceling || isCompleting;
+  const isProcessing =
+    isAccepting ||
+    isRejecting ||
+    isCanceling ||
+    isCancelingInstant ||
+    isCompleting ||
+    isStartingInstant ||
+    isMarkingInstantArrival ||
+    isCompletingInstant;
 
   const handleCancelConfirm = () => setConfirmDialog({ open: false, type: null });
   const handleOpenCancelDialog = (variant = 'cancel') => {
@@ -200,9 +510,37 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   const handleConfirmAccept = async () => {
     try {
-      const result = await acceptBooking(booking._id).unwrap();
+      let result;
+      if (booking.instant) {
+        const offerId = booking.instant.flow?.currentOffer?.offerId;
+        if (!offerId) {
+          toast.error('This request is no longer waiting for your answer.');
+          setConfirmDialog({ open: false, type: null });
+          return;
+        }
+        result = await acceptInstantOffer(offerId).unwrap();
+        setBookingStatus(result?.data?.status || result?.data?.booking?.status || 'accepted_awaiting_payment');
+        toast.success(t('bookingAcceptedSuccess'));
+        setConfirmDialog({ open: false, type: null });
+        return;
+      }
+      result = await acceptBooking(booking._id).unwrap();
       setBookingStatus(result?.data?.status || 'scheduled');
       toast.success(t('bookingAcceptedSuccess'));
+      setConfirmDialog({ open: false, type: null });
+    } catch (error) {
+      toast.error(error?.data?.message || t('somethingWentWrong'));
+    }
+  };
+
+  const handleConfirmInstantCancel = async () => {
+    try {
+      const result = await cancelInstantBooking({
+        id: booking._id,
+        reason: isProvider ? 'provider' : 'client',
+      }).unwrap();
+      setBookingStatus(result?.data?.status || result?.data?.booking?.status || 'canceled');
+      toast.success(t('bookingCancelledSuccess'));
       setConfirmDialog({ open: false, type: null });
     } catch (error) {
       toast.error(error?.data?.message || t('somethingWentWrong'));
@@ -217,9 +555,24 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   const handleStartBooking = async () => {
     try {
-      const result = await startBooking(booking._id).unwrap();
-      setBookingStatus(result?.data?.status || 'ongoing');
+      const result = isInstant
+        ? await startInstantBooking(booking._id).unwrap()
+        : await startBooking(booking._id).unwrap();
+      setBookingStatus(result?.data?.status || result?.data?.booking?.status || 'ongoing');
       toast.success(t('bookingStartedSuccess'));
+    } catch (error) {
+      toast.error(error?.data?.message || t('somethingWentWrong'));
+    }
+  };
+
+  const handleInstantCustomerArrived = async () => {
+    try {
+      const result = await customerArrivedInstantBooking(booking._id).unwrap();
+      setInstantArrivalActionDone(true);
+      if (result?.data?.status) setBookingStatus(result.data.status);
+      toast.success(t(isCustomer ? 'iHaveArrived' : 'customerArrived', {
+        defaultValue: isCustomer ? 'Arrival reported' : 'Customer arrival reported',
+      }));
     } catch (error) {
       toast.error(error?.data?.message || t('somethingWentWrong'));
     }
@@ -227,8 +580,10 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   const handleConfirmComplete = async () => {
     try {
-      const result = await completeBooking(booking._id).unwrap();
-      setBookingStatus(result?.data?.status || 'completed');
+      const result = isInstant
+        ? await completeInstantBooking({ id: booking._id }).unwrap()
+        : await completeBooking(booking._id).unwrap();
+      setBookingStatus(result?.data?.status || result?.data?.booking?.status || 'completed');
       toast.success(t('bookingCompletedSuccess'));
       setConfirmDialog({ open: false, type: null });
     } catch (error) {
@@ -238,7 +593,12 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
   const handleCancelOrRejectConfirm = async ({ reason }) => {
     try {
-      if (cancelDialogVariant === 'reject') {
+      if (cancelDialogVariant === 'reject' && booking.instant) {
+        const result = await declineInstantBooking(booking._id).unwrap();
+        setBookingStatus(result?.data?.status || result?.data?.booking?.status || 'declined');
+        setCancellationReason(reason?.trim() ?? '');
+        toast.success(t('bookingRejectedSuccess'));
+      } else if (cancelDialogVariant === 'reject') {
         const result = await rejectBooking({ id: booking._id, reason }).unwrap();
         setBookingStatus(result?.data?.status || 'canceled');
         setCancellationReason(reason?.trim() ?? '');
@@ -294,15 +654,15 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
   const cover = booking.cover || (booking.photos && booking.photos.length > 0 && typeof booking.photos[0] === 'string' ? booking.photos[0] : fallbackImage);
   const hasRealCover = Boolean(cover) && cover !== fallbackImage && !coverLoadFailed;
 
-  const hasCustomerActions = isCustomer && (showCustomerCancel || (showCustomerPayNow && !isPaymentFixRequired) || showCustomerWithdrawRequest);
-  const hasProviderActions = isProvider && (showProviderAcceptReject || showProviderComplete || showReminder);
+  const hasCustomerActions = isCustomer && (showCustomerCancel || (showCustomerPayNow && !isPaymentFixRequired) || showCustomerWithdrawRequest || showInstantCancel || showInstantArrived);
+  const hasProviderActions = isProvider && (showProviderAcceptReject || showProviderComplete || showReminder || showInstantCancel || showInstantArrived);
 
   const otherParty = isCustomer
     ? { id: booking.providerId, name: booking.providerName, avatar: normalizeImageUrl(booking.business?.image) }
     : { id: booking.clientId, name: booking.client?.name, avatar: normalizeImageUrl(booking.client?.profileIcon) };
 
   const isMessagingClosed = bookingStatus === 'completed' || bookingStatus === 'canceled' || bookingStatus === 'expired';
-  const canMessageOtherParty = !readOnly && (isCustomer || isProvider) && !!otherParty.id && !isMessagingClosed;
+  const canMessageOtherParty = !readOnly && (isCustomer || isProvider) && !!otherParty.id && !isMessagingClosed && booking.canMessage !== false;
 
   const handleMessage = () => {
     if (!otherParty.id) return;
@@ -321,6 +681,32 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
     if (!serviceId) return;
     router.push(readOnly ? paths.adminDashboard.serviceDetails(serviceId) : paths.dashboard.serviceDetails(serviceId));
   };
+
+  const cancellationImpact = booking.instant?.cancellationImpact || {};
+  const cancellationCurrency = booking.instant?.currency || booking.instant?.pricing?.currency || 'USD';
+  const unavailableAmount = t('notAvailable');
+  const instantCancelContent = (
+    <Stack spacing={1.5}>
+      <Typography variant="body2">{t('instantCancelImpactIntro')}</Typography>
+      {isCustomer && (
+        <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'background.neutral' }}>
+          <Typography variant="body2">
+            {t('instantCustomerCancellationFee')}: {formatCancellationCents(cancellationImpact.customer?.feeCents, cancellationCurrency, unavailableAmount)}
+          </Typography>
+          <Typography variant="body2">
+            {t('instantCustomerRefund')}: {formatCancellationCents(cancellationImpact.customer?.refundCents, cancellationCurrency, unavailableAmount)}
+          </Typography>
+        </Box>
+      )}
+      {isProvider && (
+        <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'background.neutral' }}>
+          <Typography variant="body2">
+            {t('instantProviderCancellationPenalty')}: {formatCancellationCents(cancellationImpact.provider?.penaltyCents, cancellationCurrency, unavailableAmount)}
+          </Typography>
+        </Box>
+      )}
+    </Stack>
+  );
 
   const providerConfirmConfig = {
     accept: {
@@ -341,6 +727,14 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
       color: 'success.main',
       label: t('complete'),
       onConfirm: handleConfirmComplete,
+    },
+    'instant-cancel': {
+      open: confirmDialog.open && confirmDialog.type === 'instant-cancel',
+      title: t('cancelBooking'),
+      content: instantCancelContent,
+      color: 'error.main',
+      label: t('cancelBooking'),
+      onConfirm: handleConfirmInstantCancel,
     },
   };
   const activeProviderConfirm = providerConfirmConfig[confirmDialog.type];
@@ -424,17 +818,72 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
               <Typography variant="h5" fontWeight={800} noWrap sx={{ lineHeight: 1.2 }}>
                 {booking.serviceName}
               </Typography>
-              {booking.bookingId && (
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }} noWrap>
-                  {booking.bookingId}
-                </Typography>
-              )}
+              <Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ mt: 0.5, columnGap: 1.5, rowGap: 0.5, color: 'text.secondary' }}>
+                {booking.bookingId && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.5}
+                    component="button"
+                    type="button"
+                    title="Copy booking ID"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(booking.bookingId);
+                      toast.success('Booking ID copied');
+                    }}
+                    sx={{ p: 0, border: 'none', bgcolor: 'transparent', cursor: 'pointer', fontFamily: 'inherit', color: 'inherit', '&:hover': { color: 'primary.main' } }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Booking #{shortBookingRef(booking.bookingId)}
+                    </Typography>
+                    <Iconify icon="solar:copy-linear" width={15} />
+                  </Stack>
+                )}
+                {(booking.day || booking.slot) && (
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Iconify icon="solar:calendar-linear" width={15} />
+                    <Typography variant="body2" noWrap>
+                      {booking.instant?.slot?.open ? formatInstantWhen(booking.instant) : [booking.day, booking.slot].filter(Boolean).join(' · ')}
+                    </Typography>
+                  </Stack>
+                )}
+              </Stack>
             </Box>
 
             {/* Status chip on right */}
-            <Label variant="soft" color={STATUS_COLOR[bookingStatus] ?? 'default'} sx={{ ml: 'auto', flexShrink: 0, fontWeight: 700, textTransform: 'capitalize' }}>
-              {t(bookingStatus)}
-            </Label>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              alignItems={{ xs: 'flex-end', sm: 'center' }}
+              spacing={0.75}
+              sx={{ ml: 'auto', flexShrink: 0 }}
+            >
+              {booking.instant ? (
+                <Label
+                  variant="soft"
+                  color={INSTANT_STATUS_META[bookingStatus]?.color ?? 'default'}
+                  startIcon={<Iconify icon={INSTANT_STATUS_META[bookingStatus]?.icon ?? 'solar:info-circle-bold'} width={16} />}
+                  sx={{ fontWeight: 700, height: 28, px: 1.25 }}
+                >
+                  {INSTANT_STATUS_META[bookingStatus]?.label ?? humanizeStatus(bookingStatus)}
+                </Label>
+              ) : (
+                <Label variant="soft" color={STATUS_COLOR[bookingStatus] ?? 'default'} sx={{ fontWeight: 700, textTransform: 'capitalize' }}>
+                  {t(bookingStatus, { defaultValue: humanizeStatus(bookingStatus) })}
+                </Label>
+              )}
+              {showInstantArrivalBadge && (
+                <Label
+                  variant="soft"
+                  color="success"
+                  startIcon={<Iconify icon="solar:user-check-rounded-bold" width={14} />}
+                  sx={{ height: 28, px: 1.25, whiteSpace: 'nowrap' }}
+                >
+                  {isCustomer
+                    ? t('youArrived', { defaultValue: 'You arrived' })
+                    : t('customerArrived', { defaultValue: 'Customer arrived' })}
+                </Label>
+              )}
+            </Stack>
           </Box>
 
           {/* Actions Bar */}
@@ -450,6 +899,12 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
                 justifyContent: 'flex-end',
                 flexWrap: 'wrap',
                 gap: 1,
+                '& > .MuiButton-root': {
+                  width: { xs: '100%', sm: 158 },
+                  minWidth: { xs: '100%', sm: 158 },
+                  height: 36,
+                  whiteSpace: 'nowrap',
+                },
               }}
             >
               {canMessageOtherParty && (
@@ -499,6 +954,41 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
                       sx={{ bgcolor: CANCEL_RED, '&:hover': { bgcolor: '#6e1818' } }}
                     >
                       {t('cancelBooking')}
+                    </Button>
+                  )}
+
+                  {showInstantCancel && (
+                    <Button
+                      component={m.button}
+                      whileTap="tap"
+                      whileHover="hover"
+                      variants={varHover(1.03, 0.99)}
+                      variant="contained"
+                      size="small"
+                      startIcon={<Iconify icon="carbon:close" width={16} />}
+                      onClick={() => setInstantCancelOpen(true)}
+                      sx={{ bgcolor: CANCEL_RED, '&:hover': { bgcolor: '#6e1818' } }}
+                    >
+                      {t('cancelBooking')}
+                    </Button>
+                  )}
+
+                  {showInstantArrived && (
+                    <Button
+                      component={m.button}
+                      whileTap="tap"
+                      whileHover="hover"
+                      variants={varHover(1.03, 0.99)}
+                      variant="contained"
+                      color="info"
+                      size="small"
+                      startIcon={<Iconify icon="solar:map-point-bold" width={16} />}
+                      disabled={isMarkingInstantArrival}
+                      onClick={handleInstantCustomerArrived}
+                    >
+                      {isMarkingInstantArrival
+                        ? t('processing')
+                        : t('iHaveArrived', { defaultValue: 'I have arrived' })}
                     </Button>
                   )}
 
@@ -553,6 +1043,41 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
                     </>
                   )}
 
+                  {showInstantCancel && (
+                    <Button
+                      component={m.button}
+                      whileTap="tap"
+                      whileHover="hover"
+                      variants={varHover(1.03, 0.99)}
+                      variant="contained"
+                      size="small"
+                      startIcon={<Iconify icon="carbon:close" width={16} />}
+                      onClick={() => setInstantCancelOpen(true)}
+                      sx={{ bgcolor: CANCEL_RED, '&:hover': { bgcolor: '#6e1818' } }}
+                    >
+                      {t('cancelBooking')}
+                    </Button>
+                  )}
+
+                  {showInstantArrived && (
+                    <Button
+                      component={m.button}
+                      whileTap="tap"
+                      whileHover="hover"
+                      variants={varHover(1.03, 0.99)}
+                      variant="contained"
+                      color="info"
+                      size="small"
+                      startIcon={<Iconify icon="solar:user-check-rounded-bold" width={16} />}
+                      disabled={isMarkingInstantArrival}
+                      onClick={handleInstantCustomerArrived}
+                    >
+                      {isMarkingInstantArrival
+                        ? t('processing')
+                        : t('customerArrived', { defaultValue: 'Customer arrived' })}
+                    </Button>
+                  )}
+
                   {showProviderComplete && (
                     <Button
                       component={m.button}
@@ -564,6 +1089,7 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
                       size="small"
                       startIcon={<Iconify icon="solar:check-circle-bold" width={16} />}
                       onClick={() => setConfirmDialog({ open: true, type: 'complete' })}
+                      sx={{ fontWeight: 700 }}
                     >
                       {t('complete')}
                     </Button>
@@ -695,14 +1221,14 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
 
               <Button
                 variant="contained"
-                color="success"
+                color="primary"
                 size="small"
-                disabled={isStarting}
+                disabled={isStarting || isStartingInstant}
                 onClick={handleStartBooking}
                 startIcon={<Iconify icon="solar:play-circle-bold" width={16} />}
-                sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                sx={{ width: 158, minWidth: 158, height: 36, flexShrink: 0, whiteSpace: 'nowrap' }}
               >
-                {isStarting ? t('processing') : t('startBooking')}
+                {isStarting || isStartingInstant ? t('processing') : t('startBooking')}
               </Button>
             </Stack>
           </Box>
@@ -759,8 +1285,23 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
         )}
 
         <Stack spacing={2} sx={{ mt: 2 }}>
+          {showInstantStatusGuidance && (
+            <InstantBookingStatusGuidance status={bookingStatus} isCustomer={isCustomer} t={t} />
+          )}
+          {isProvider && isInstant && bookingStatus === 'requested' && <ProviderOfferTimer booking={{ ...booking.instant, status: bookingStatus }} />}
+          {isCustomer && isInstant && (
+            <InstantRequestPanel
+              booking={booking.instant}
+              offerStatus={instantOfferStatus}
+              isRefreshing={isRefreshing}
+            />
+          )}
           <BookingOverviewTab booking={{ ...booking, status: bookingStatus }} viewerRole={viewerRole} />
-          {bookingStatus === 'canceled' && cancellationReason && <CancellationReasonSection reason={cancellationReason} />}
+          {bookingStatus === 'canceled' && isInstant && booking.instant?.cancellation ? (
+            <InstantCancellationSummary booking={booking.instant} viewer={isProvider ? 'provider' : 'customer'} providerName={booking.providerName || booking.business?.businessName} />
+          ) : (
+            bookingStatus === 'canceled' && cancellationReason && <CancellationReasonSection reason={cancellationReason} />
+          )}
           {showSuggestedServices && <SuggestedServicesSection services={suggestedServices} onView={handleViewSuggestedService} />}
           {showReviewSection && (
             <BookingReviewTab
@@ -835,6 +1376,16 @@ export const BookingDetailView = memo(({ booking, readOnly = false }) => {
       />
 
       <CancelBookingDialog open={cancelBookingOpen} variant={cancelDialogVariant} onClose={handleCloseCancelDialog} onConfirm={handleCancelOrRejectConfirm} />
+      {(isCustomer || isProvider) && isInstant && (
+        <CancelInstantBookingDialog
+          open={instantCancelOpen}
+          bookingId={booking._id}
+          viewer={isProvider ? 'provider' : 'customer'}
+          onClose={() => setInstantCancelOpen(false)}
+          onCancelled={() => setBookingStatus('canceled')}
+        />
+      )}
+
       <PayNowDialog open={payNowOpen} booking={booking} onClose={() => setPayNowOpen(false)} onPay={handlePayNowSuccess} />
 
       {reviewMode && (
@@ -904,8 +1455,21 @@ export function BookingDetailPageView() {
   const { t, i18n } = useTranslate();
   const { id } = useParams();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
+  const dispatch = useDispatch();
+  const [instantOfferStatus, setInstantOfferStatus] = useState(null);
   const readOnly = pathname.includes('/admin-dashboard');
+  const viewer = useSelector((state) => state.user?.user);
+  const viewerType = viewer?.accountState?.userType;
+  const isCustomerViewer = !readOnly && (viewerType === 'user' || viewerType === 'customer');
+  const isProviderViewer = !readOnly && (viewerType === 'provider' || viewerType === 'business');
+  const isInstantBookingViewer = (isCustomerViewer || isProviderViewer) && searchParams.get('mode') === 'instant';
+  const { socket } = useChatSocketContext();
+
+  useEffect(() => {
+    setInstantOfferStatus(null);
+  }, [id]);
 
   const myLocation = getMyLocation();
   const hasRealMyLocation = isRealCoords(myLocation?.lat, myLocation?.lng);
@@ -913,18 +1477,116 @@ export function BookingDetailPageView() {
   const adminResult = useGetAdminBookingByIdQuery(id, { skip: !id || !readOnly });
   const userResult = useGetBookingByIdQuery(
     hasRealMyLocation ? { id, lat: myLocation.lat, lng: myLocation.lng } : id,
-    { skip: !id || readOnly }
+    { skip: !id || readOnly || isInstantBookingViewer }
   );
-  const { data: bookingResponse, isLoading, isFetching } = readOnly ? adminResult : userResult;
+  const instantResult = useGetInstantBookingQuery(id, { skip: !id || !isInstantBookingViewer });
+  const { data: bookingResponse, isLoading, isFetching } = readOnly ? adminResult : isInstantBookingViewer ? instantResult : userResult;
+
+  useEffect(() => {
+    if (!socket || !id || !isInstantBookingViewer) return undefined;
+
+    const updateBookingFromEvent = (payload, statusOverride, ignoreEventStatus = false) => {
+      if (payload?.bookingId !== id) return;
+      const eventBooking = payload?.booking || payload?.data?.booking || payload?.data || payload;
+      const status = statusOverride ?? (ignoreEventStatus ? undefined : payload?.status ?? eventBooking?.status);
+      const paymentStatus =
+        payload?.paymentStatus ??
+        payload?.paymentInfo?.status ??
+        payload?.payment?.status ??
+        eventBooking?.paymentStatus ??
+        eventBooking?.paymentInfo?.status ??
+        eventBooking?.payment?.status;
+      if (!status && !paymentStatus) return;
+
+      dispatch(
+        instantBookingsApi.util.updateQueryData('getInstantBooking', id, (draft) => {
+          const apiBooking = Array.isArray(draft?.data) ? draft.data[0] : draft?.data;
+          if (!apiBooking) return;
+          if (status) apiBooking.status = status;
+          if (paymentStatus) apiBooking.paymentStatus = paymentStatus;
+        })
+      );
+    };
+
+    const handleOfferReceived = (payload) => {
+      updateBookingFromEvent(payload, 'requested');
+      if (payload?.bookingId !== id) return;
+      setInstantOfferStatus('pending');
+
+      const deadline = getLocalInstantDeadline(payload.expiresAt, payload.serverNow);
+      if (deadline == null) return;
+      dispatch(
+        instantBookingsApi.util.updateQueryData('getInstantBooking', id, (draft) => {
+          const apiBooking = Array.isArray(draft?.data) ? draft.data[0] : draft?.data;
+          if (apiBooking) {
+            apiBooking.offerExpiresAt = payload.expiresAt;
+            apiBooking.serverNow = payload.serverNow;
+            apiBooking.flow = apiBooking.flow || {};
+            apiBooking.flow.currentOffer = apiBooking.flow.currentOffer || {};
+            apiBooking.flow.currentOffer.expiresAt = payload.expiresAt;
+            apiBooking.flow.currentOffer.serverNow = payload.serverNow;
+          }
+        })
+      );
+    };
+    const handleOfferClosed = (payload) => {
+      if (payload?.bookingId !== id) return;
+      const isOfferStatus = ['pending', 'accepted', 'declined', 'expired', 'closed'].includes(payload.status);
+      if (isOfferStatus) setInstantOfferStatus(payload.status);
+      updateBookingFromEvent(payload, undefined, isOfferStatus);
+      dispatch(instantBookingsApi.util.invalidateTags([{ type: 'instantBooking', id }]));
+    };
+    const handleBookingStatusChanged = (payload) => {
+      if (payload?.bookingId !== id) return;
+      if (payload.status && payload.status !== 'requested') setInstantOfferStatus(null);
+      updateBookingFromEvent(payload);
+      dispatch(instantBookingsApi.util.invalidateTags([{ type: 'instantBooking', id }]));
+    };
+    const handleBookingPaymentUpdated = (payload) => {
+      const eventBooking = payload?.booking || payload?.data?.booking || payload?.data || payload;
+      const bookingId = payload?.bookingId ?? payload?.instantBookingId ?? eventBooking?._id;
+      if (bookingId !== id) return;
+      const paymentStatus =
+        payload?.paymentStatus ??
+        payload?.paymentInfo?.status ??
+        payload?.payment?.status ??
+        eventBooking?.paymentStatus ??
+        eventBooking?.paymentInfo?.status ??
+        eventBooking?.payment?.status ??
+        payload?.status;
+      if (paymentStatus) {
+        dispatch(
+          instantBookingsApi.util.updateQueryData('getInstantBooking', id, (draft) => {
+            const apiBooking = Array.isArray(draft?.data) ? draft.data[0] : draft?.data;
+            if (apiBooking) apiBooking.paymentStatus = paymentStatus;
+          })
+        );
+      }
+      dispatch(instantBookingsApi.util.invalidateTags([{ type: 'instantBooking', id }]));
+    };
+
+    socket.on('offerReceived', handleOfferReceived);
+    socket.on('offerClosed', handleOfferClosed);
+    socket.on('bookingStatusChanged', handleBookingStatusChanged);
+    socket.on('bookingPaymentUpdated', handleBookingPaymentUpdated);
+
+    return () => {
+      socket.off('offerReceived', handleOfferReceived);
+      socket.off('offerClosed', handleOfferClosed);
+      socket.off('bookingStatusChanged', handleBookingStatusChanged);
+      socket.off('bookingPaymentUpdated', handleBookingPaymentUpdated);
+    };
+  }, [dispatch, id, isInstantBookingViewer, socket]);
 
   // normalizeBooking formats day/date labels via the current dayjs locale — re-run it when
   // the language changes too, not just when the underlying data changes.
   const booking = useMemo(() => {
-    const apiBooking = Array.isArray(bookingResponse?.data) ? bookingResponse.data[0] : bookingResponse?.data;
+    let apiBooking = Array.isArray(bookingResponse?.data) ? bookingResponse.data[0] : bookingResponse?.data;
+    if (apiBooking && isInstantBookingViewer) apiBooking = { ...apiBooking, mode: 'instant' };
     return apiBooking ? normalizeBooking(apiBooking) : null;
-  }, [bookingResponse?.data, i18n.resolvedLanguage]);
+  }, [bookingResponse?.data, i18n.resolvedLanguage, isInstantBookingViewer]);
 
-  if (isLoading || isFetching) {
+  if (isLoading || (isFetching && !bookingResponse)) {
     return <BookingDetailSkeleton />;
   }
 
@@ -936,5 +1598,12 @@ export function BookingDetailPageView() {
     );
   }
 
-  return <BookingDetailView booking={booking} readOnly={readOnly} />;
+  return (
+    <BookingDetailView
+      booking={booking}
+      readOnly={readOnly}
+      instantOfferStatus={instantOfferStatus}
+      isRefreshing={isFetching}
+    />
+  );
 }
