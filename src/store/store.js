@@ -21,6 +21,7 @@ import { chatApi } from './Reducer/chat-api';
 import { adminDashboardApi } from './Reducer/admin-dashboard-api';
 import { tagsApi } from './Reducer/tags-api';
 import { portfolioApi } from './Reducer/portfolio-api';
+import { instantBookingsApi } from './Reducer/instant-bookings-api';
 
 const persistConfig = {
   key: 'root',
@@ -55,6 +56,7 @@ export const store = configureStore({
     [adminDashboardApi.reducerPath]: adminDashboardApi.reducer,
     [tagsApi.reducerPath]: tagsApi.reducer,
     [portfolioApi.reducerPath]: portfolioApi.reducer,
+    [instantBookingsApi.reducerPath]: instantBookingsApi.reducer,
     user: persistedUserReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -80,7 +82,8 @@ export const store = configureStore({
       chatApi.middleware,
       adminDashboardApi.middleware,
       tagsApi.middleware,
-      portfolioApi.middleware
+      portfolioApi.middleware,
+      instantBookingsApi.middleware
     ),
 });
 

@@ -14,6 +14,7 @@ import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
 import { fCurrency } from 'src/utils/format-number';
 import { varAlpha } from 'src/theme/styles';
+import { getCancellationPolicy } from 'src/utils/cancellation-policy';
 
 // ----------------------------------------------------------------------
 
@@ -273,21 +274,10 @@ export function PackageViewDialog({ open, onClose, service, onEdit }) {
         </Stack>
 
         {/* Booking Rules */}
-        {(service.latestBookHours != null || service.latestCancelHours != null) && (
-          <>
-            <SectionDivider title="Booking Rules" />
-
-            <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />}>
-              {service.latestBookHours != null && <DetailRow label="Latest Booking" value={`${service.latestBookHours}h ${service.latestBookMins || 0}m before`} />}
-
-              {service.latestCancelHours != null && <DetailRow label="Latest Cancellation" value={`${service.latestCancelHours}h ${service.latestCancelMins || 0}m before`} />}
-
-              {service.refundPercentage != null && <DetailRow label="Refund" value={`${service.refundPercentage}%`} />}
-
-              {service.refundRules && <DetailRow label="Refund Rules" value={service.refundRules} />}
-            </Stack>
-          </>
-        )}
+        <SectionDivider title="Cancellation Policy" />
+        <Stack divider={<Divider sx={{ borderStyle: 'dashed' }} />}>
+          <DetailRow label="Policy" value={getCancellationPolicy(service.cancellationPolicy).label} />
+        </Stack>
 
         {/* Slots */}
         {service.slots?.operatingHours && (

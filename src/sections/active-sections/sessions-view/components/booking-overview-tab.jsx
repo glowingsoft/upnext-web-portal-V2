@@ -169,11 +169,44 @@ function DetailRow({ icon, label, value, color = 'primary' }) {
   );
 }
 
+function formatInstantCents(cents, currency) {
+  const amount = Number(cents);
+  if (cents == null || !Number.isFinite(amount)) return null;
+  return fCurrency(amount / 100, { currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function PricingBreakdownRow({ label, value, emphasized = false }) {
+  return (
+    <Stack direction="row" justifyContent="space-between" spacing={2}>
+      <Typography variant="body2" color={emphasized ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: emphasized ? 800 : 400 }}>
+        {label}
+      </Typography>
+      <Typography variant={emphasized ? 'subtitle1' : 'body2'} sx={{ fontWeight: emphasized ? 800 : 600, color: emphasized ? 'success.dark' : 'text.primary' }}>
+        {value}
+      </Typography>
+    </Stack>
+  );
+}
+
 export const BookingOverviewTab = memo(({ booking, viewerRole = 'customer' }) => {
   const { t } = useTranslate();
   const savingsKey = viewerRole === 'admin' ? 'discountAppliedAmount' : viewerRole === 'provider' ? 'customerSaved' : 'youSaved';
   const isSubscription = booking.serviceType === 'subscription' || Boolean(booking.daysCombination?.length);
   const isOnsite = booking.deliveryMethod === 'onsite';
+  const instantPricing = booking.instant?.pricing;
+  const instantPayout =
+    viewerRole === 'provider' && booking.mode === 'instant' && booking.status === 'completed'
+      ? booking.instant?.payout
+      : null;
+  const payoutCurrency = booking.instant?.currency || booking.instant?.pricing?.currency || 'USD';
+  const showInstantCustomerTotal =
+    viewerRole === 'customer' &&
+    booking.mode === 'instant' &&
+    instantPricing?.totalCents != null &&
+    Number.isFinite(Number(instantPricing.totalCents));
+  const overviewPrice = showInstantCustomerTotal
+    ? Number(instantPricing.totalCents) / 100
+    : booking.price;
 
   const showCurrentDay = isSubscription && booking.status === 'ongoing' && (booking.sessionSubState === 'in_progress' || booking.sessionSubState === 'awaiting_start');
   const dayLabel = showCurrentDay ? t('currentDay') : t('upcomingDay');
@@ -377,7 +410,7 @@ export const BookingOverviewTab = memo(({ booking, viewerRole = 'customer' }) =>
           </Box>
         )}
 
-        {booking.price != null && (
+        {overviewPrice != null && (
           <Box
             sx={{
               mb: 2.5,
@@ -387,56 +420,232 @@ export const BookingOverviewTab = memo(({ booking, viewerRole = 'customer' }) =>
               border: (theme) => `1px solid ${varAlpha(theme.vars.palette.success.mainChannel, 0.2)}`,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Box
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: (theme) => varAlpha(theme.vars.palette.success.mainChannel, 0.16),
-                    color: 'success.dark',
-                  }}
-                >
-                  <Iconify icon="solar:wallet-bold-duotone" width={20} />
-                </Box>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
-                  {t('price')}
-                </Typography>
-              </Stack>
-
-              <Stack alignItems="flex-end" spacing={0.25}>
-                {booking.actualPrice != null && (
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
-                    {fCurrency(booking.actualPrice)}
+            {showInstantCustomerTotal ? (
+              <>
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: (theme) => varAlpha(theme.vars.palette.success.mainChannel, 0.16),
+                      color: 'success.dark',
+                    }}
+                  >
+                    <Iconify icon="solar:wallet-bold-duotone" width={20} />
+                  </Box>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                    {t('instantPaymentBreakdown', { defaultValue: 'Payment breakdown' })}
                   </Typography>
-                )}
-                <Typography variant="h5" fontWeight={800} sx={{ color: 'success.dark' }}>
-                  {fCurrency(booking.price)}
-                </Typography>
-              </Stack>
-            </Box>
+                </Stack>
 
-            {booking.actualPrice != null && (
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={0.75}
-                sx={{
-                  mt: 1.25,
-                  pt: 1.25,
-                  borderTop: (theme) => `dashed 1px ${varAlpha(theme.vars.palette.success.mainChannel, 0.24)}`,
-                }}
-              >
-                <Iconify icon="solar:tag-price-bold" width={16} sx={{ color: 'success.dark' }} />
-                <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 700 }}>
-                  {t(savingsKey, { amount: fCurrency(booking.actualPrice - booking.price) })}
+                <Stack spacing={1}>
+                  {instantPricing.servicePriceCents != null && (
+                    <PricingBreakdownRow
+                      label={t('instantServicePrice', { defaultValue: 'Service price' })}
+                      value={formatInstantCents(instantPricing.servicePriceCents, payoutCurrency)}
+                    />
+                  )}
+                  {instantPricing.depositCents != null && (
+                    <PricingBreakdownRow
+                      label={t('instantDepositIncludedLabel', { defaultValue: 'Deposit (included in total)' })}
+                      value={formatInstantCents(instantPricing.depositCents, payoutCurrency)}
+                    />
+                  )}
+                  {(instantPricing.chargeFeeCents ?? instantPricing.feeCents) != null && (
+                    <PricingBreakdownRow
+                      label={t('instantBookingFee', { defaultValue: 'Booking fee' })}
+                      value={formatInstantCents(instantPricing.chargeFeeCents ?? instantPricing.feeCents, payoutCurrency)}
+                    />
+                  )}
+                  {instantPricing.promoDiscountCents != null && (
+                    <PricingBreakdownRow
+                      label={t('instantPromotionDiscount', { defaultValue: 'Promotion discount' })}
+                      value={formatInstantCents(
+                        Number(instantPricing.promoDiscountCents) === 0
+                          ? 0
+                          : -Math.abs(Number(instantPricing.promoDiscountCents)),
+                        payoutCurrency
+                      )}
+                    />
+                  )}
+                  <Box sx={{ pt: 1, borderTop: '1px dashed', borderColor: 'success.main' }}>
+                    <PricingBreakdownRow
+                      label={t('instantTotalBookingCost', { defaultValue: 'Total booking cost' })}
+                      value={formatInstantCents(instantPricing.totalCents, payoutCurrency)}
+                      emphasized
+                    />
+                  </Box>
+                  {booking.instant?.capture?.status === 'captured' && booking.instant.capture.amountCents != null && (
+                    <PricingBreakdownRow
+                      label={t('instantAmountCaptured', { defaultValue: 'Amount captured' })}
+                      value={formatInstantCents(booking.instant.capture.amountCents, payoutCurrency)}
+                    />
+                  )}
+                </Stack>
+
+                {Number(instantPricing.heldCents) > 0 &&
+                  !['captured', 'paid'].includes(booking.paymentStatus) &&
+                  booking.status !== 'completed' && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      {t('instantAmountHeld', {
+                        amount: formatInstantCents(instantPricing.heldCents, payoutCurrency),
+                        defaultValue: `Amount currently held: ${formatInstantCents(instantPricing.heldCents, payoutCurrency)}`,
+                      })}
+                    </Typography>
+                  )}
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: (theme) => varAlpha(theme.vars.palette.success.mainChannel, 0.16),
+                        color: 'success.dark',
+                      }}
+                    >
+                      <Iconify icon="solar:wallet-bold-duotone" width={20} />
+                    </Box>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                      {t('price')}
+                    </Typography>
+                  </Stack>
+
+                  <Stack alignItems="flex-end" spacing={0.25}>
+                    {booking.actualPrice != null && (
+                      <Typography variant="subtitle1" fontWeight={600} sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
+                        {fCurrency(booking.actualPrice)}
+                      </Typography>
+                    )}
+                    <Typography variant="h5" fontWeight={800} sx={{ color: 'success.dark' }}>
+                      {fCurrency(overviewPrice, { currency: payoutCurrency })}
+                    </Typography>
+                  </Stack>
+                </Box>
+
+                {booking.actualPrice != null && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.75}
+                    sx={{
+                      mt: 1.25,
+                      pt: 1.25,
+                      borderTop: (theme) => `dashed 1px ${varAlpha(theme.vars.palette.success.mainChannel, 0.24)}`,
+                    }}
+                  >
+                    <Iconify icon="solar:tag-price-bold" width={16} sx={{ color: 'success.dark' }} />
+                    <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 700 }}>
+                      {t(savingsKey, { amount: fCurrency(booking.actualPrice - booking.price) })}
+                    </Typography>
+                  </Stack>
+                )}
+              </>
+            )}
+          </Box>
+        )}
+
+        {instantPayout && (
+          <Box
+            sx={{
+              mb: 2.5,
+              p: 2,
+              borderRadius: 2,
+              border: (theme) => `1px solid ${varAlpha(theme.vars.palette.success.mainChannel, 0.2)}`,
+              bgcolor: (theme) => varAlpha(theme.vars.palette.success.mainChannel, 0.08),
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1.5 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Iconify icon="solar:wallet-money-bold" width={20} sx={{ color: 'success.main' }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                  {t('instantPayoutSummary', { defaultValue: 'Payout summary' })}
                 </Typography>
               </Stack>
-            )}
+              {instantPayout.status && (
+                <Label
+                  variant="soft"
+                  color={getPaymentStatusColor(instantPayout.status)}
+                  sx={{ textTransform: 'none', fontWeight: 700 }}
+                >
+                  {t(instantPayout.status, { defaultValue: formatPaymentStatusLabel(instantPayout.status) })}
+                </Label>
+              )}
+            </Stack>
+
+            <Stack spacing={1}>
+              {instantPayout.grossCents != null && (
+                <Stack direction="row" justifyContent="space-between" spacing={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('instantPayoutGross', { defaultValue: 'Service earnings' })}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {formatInstantCents(instantPayout.grossCents, payoutCurrency)}
+                  </Typography>
+                </Stack>
+              )}
+              {instantPayout.stripeFeeShareCents != null && (
+                <Stack direction="row" justifyContent="space-between" spacing={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('instantPayoutFee', { defaultValue: 'Payment processing fee' })}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {formatInstantCents(
+                      Number(instantPayout.stripeFeeShareCents) === 0
+                        ? 0
+                        : -Math.abs(Number(instantPayout.stripeFeeShareCents)),
+                      payoutCurrency
+                    )}
+                  </Typography>
+                </Stack>
+              )}
+              {instantPayout.deductionCents != null && (
+                <Stack direction="row" justifyContent="space-between" spacing={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('instantPayoutDeductions', { defaultValue: 'Other deductions' })}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {formatInstantCents(
+                      Number(instantPayout.deductionCents) === 0
+                        ? 0
+                        : -Math.abs(Number(instantPayout.deductionCents)),
+                      payoutCurrency
+                    )}
+                  </Typography>
+                </Stack>
+              )}
+              {instantPayout.netCents != null && (
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  spacing={2}
+                  sx={{ pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    {t('instantNetPayout', { defaultValue: 'Net payout' })}
+                  </Typography>
+                  <Typography variant="subtitle1" sx={{ color: 'success.dark', fontWeight: 800 }}>
+                    {formatInstantCents(instantPayout.netCents, payoutCurrency)}
+                  </Typography>
+                </Stack>
+              )}
+              {instantPayout.paidAt && (
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+                  {t('instantPayoutPaidAt', { defaultValue: 'Paid' })}{' '}
+                  {fDate(instantPayout.paidAt, formatStr.dateTime)}
+                </Typography>
+              )}
+            </Stack>
           </Box>
         )}
 

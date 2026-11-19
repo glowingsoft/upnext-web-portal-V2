@@ -1109,5 +1109,9 @@
   "appointmentsToday": "{{count}} مواعيد اليوم",
   "appointmentsToday_one": "موعد واحد اليوم",
   "requestsAwaitingConfirmation": "{{count}} طلبات بانتظار التأكيد",
-  "requestsAwaitingConfirmation_one": "طلب واحد بانتظار التأكيد"
+  "requestsAwaitingConfirmation_one": "طلب واحد بانتظار التأكيد",
+  "cancellationNonRefundable": "غير قابل للاسترداد",
+  "cancellationNonRefundableDescription": "لا يسترد العملاء أموالهم إذا ألغوا الحجز.",
+  "cancellationRefundable24h": "قابل للاسترداد حتى 24 ساعة قبل الموعد",
+  "cancellationRefundable24hDescription": "يحصل العملاء على استرداد إذا ألغوا قبل الموعد بـ 24 ساعة على الأقل."
 }

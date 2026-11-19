@@ -1109,5 +1109,9 @@
   "appointmentsToday": "{{count}} randevou jodi a",
   "appointmentsToday_one": "{{count}} randevou jodi a",
   "requestsAwaitingConfirmation": "{{count}} demann ap tann konfimasyon",
-  "requestsAwaitingConfirmation_one": "{{count}} demann ap tann konfimasyon"
+  "requestsAwaitingConfirmation_one": "{{count}} demann ap tann konfimasyon",
+  "cancellationNonRefundable": "Pa ka ranbouse",
+  "cancellationNonRefundableDescription": "Kliyan yo pa jwenn lajan yo tounen si yo anile.",
+  "cancellationRefundable24h": "Ka ranbouse jiska 24 èdtan anvan",
+  "cancellationRefundable24hDescription": "Kliyan yo jwenn ranbousman si yo anile omwen 24 èdtan anvan randevou a."
 }

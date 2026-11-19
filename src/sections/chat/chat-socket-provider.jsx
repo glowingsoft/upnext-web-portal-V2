@@ -20,7 +20,11 @@ export function ChatSocketProvider({ children }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!myId) return undefined;
+    if (!myId) {
+      // eslint-disable-next-line no-console
+      console.warn('[chat socket] waiting for user ID');
+      return undefined;
+    }
 
     let didConnect = false;
     const delay = hasConnectedOnceRef.current ? 300 : 800;

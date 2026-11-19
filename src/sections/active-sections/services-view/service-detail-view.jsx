@@ -661,11 +661,6 @@ function mapServiceApiData(raw) {
     .map((s) => s.dayOfWeek)
     .join(', ');
 
-  const bookHours = raw.howLateCanBook?.hours;
-  const bookMins = raw.howLateCanBook?.mins;
-  const cancelHours = raw.howLateCanCancel?.hours;
-  const cancelMins = raw.howLateCanCancel?.mins;
-
   const categoryName =
     raw.category && typeof raw.category === 'object'
       ? raw.category.name || raw.category.translations?.en || null
@@ -685,12 +680,7 @@ function mapServiceApiData(raw) {
     slots: raw.slots || [],
     concurrentClients: raw.concurrentClients,
     gapBetweenSlotMins: raw.gapBetweenSlotMins,
-    latestBookHours: bookHours != null ? bookHours : null,
-    latestBookMins: bookMins != null ? bookMins : null,
-    latestCancelHours: cancelHours != null ? cancelHours : null,
-    latestCancelMins: cancelMins != null ? cancelMins : null,
-    refundPercentage: raw.refundPercentage != null ? raw.refundPercentage : null,
-    refundRules: raw.refundRules || null,
+    cancellationPolicy: raw.cancellationPolicy || null,
     description: raw.description || '',
     averageRating: raw.rating?.avgRating ?? raw.avgRating ?? 0,
     totalReviews: raw.rating?.totalReviews ?? raw.totalReviews ?? 0,

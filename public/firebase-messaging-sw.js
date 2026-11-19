@@ -15,11 +15,11 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[FCM] background message received:', payload);
 
-  const { title, body, icon } = payload.notification || {};
+  const { title, body } = payload.notification || {};
 
   self.registration.showNotification(title || 'UpNext', {
     body: body || '',
-    icon: icon || '/favicon.ico',
+    icon: '/logo/logo.png',
     data: payload.data || {},
   });
 });

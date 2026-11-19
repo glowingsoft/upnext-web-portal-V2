@@ -1109,5 +1109,9 @@
   "appointmentsToday": "{{count}} marcações hoje",
   "appointmentsToday_one": "{{count}} marcação hoje",
   "requestsAwaitingConfirmation": "{{count}} pedidos a aguardar confirmação",
-  "requestsAwaitingConfirmation_one": "{{count}} pedido a aguardar confirmação"
+  "requestsAwaitingConfirmation_one": "{{count}} pedido a aguardar confirmação",
+  "cancellationNonRefundable": "Não reembolsável",
+  "cancellationNonRefundableDescription": "Os clientes não recebem o dinheiro de volta se cancelarem.",
+  "cancellationRefundable24h": "Reembolsável até 24 horas antes",
+  "cancellationRefundable24hDescription": "Os clientes recebem reembolso se cancelarem pelo menos 24 horas antes do agendamento."
 }

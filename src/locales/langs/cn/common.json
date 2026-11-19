@@ -1105,5 +1105,9 @@
   "bookingsToday": "今天 {{count}} 个",
   "requestsWaitingForYou": "{{count}} 个请求等待您处理",
   "appointmentsToday": "今天有 {{count}} 个预约",
-  "requestsAwaitingConfirmation": "{{count}} 个请求等待确认"
+  "requestsAwaitingConfirmation": "{{count}} 个请求等待确认",
+  "cancellationNonRefundable": "不可退款",
+  "cancellationNonRefundableDescription": "客户取消预约将不予退款。",
+  "cancellationRefundable24h": "预约前 24 小时可退款",
+  "cancellationRefundable24hDescription": "客户在预约前至少 24 小时取消即可获得退款。"
 }

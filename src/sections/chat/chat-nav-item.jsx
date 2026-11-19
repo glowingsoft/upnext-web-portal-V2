@@ -80,7 +80,9 @@ export function ChatNavItem({ selected, collapse, chat, onCloseMobile, onSelect,
 
   const renderAvatar = (
     <Box sx={{ position: 'relative', flexShrink: 0 }}>
-      <Avatar alt={displayName} src={avatarUrl} sx={{ width: 40, height: 40 }} />
+      <Avatar alt={displayName} src={avatarUrl || undefined} sx={{ width: 40, height: 40 }}>
+        {String(displayName || '?').trim().charAt(0).toUpperCase()}
+      </Avatar>
       <Box
         sx={{
           position: 'absolute',

@@ -56,6 +56,7 @@ const ICONS = {
   badges: icon('ic-label'),
   reviews: icon('ic-rating-2'),
   tags: <Iconify icon="solar:tag-bold" width={24} />,
+  instantBooking: <Iconify icon="solar:bolt-bold" width={24} />,
 };
 
 // ----------------------------------------------------------------------
@@ -72,6 +73,7 @@ const getNavData = (t) => [
       { title: t('categories'), path: paths.adminDashboard.categories, icon: ICONS.categories },
       { title: t('tags'), path: paths.adminDashboard.tags, icon: ICONS.tags },
       { title: t('badges'), path: paths.adminDashboard.badges, icon: ICONS.badges },
+      { title: t('instantBooking', { defaultValue: 'Instant Booking' }), path: paths.adminDashboard.instantBooking, icon: ICONS.instantBooking },
       // { title: t('events'), path: paths.adminDashboard.events, icon: ICONS.calendar },
       // { title: t('revenue'), path: paths.adminDashboard.revenue, icon: ICONS.analytics },
 

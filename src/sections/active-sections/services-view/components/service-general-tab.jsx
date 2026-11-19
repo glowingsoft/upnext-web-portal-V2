@@ -16,6 +16,7 @@ import { useRouter } from 'src/routes/hooks';
 import { paths } from 'src/routes/paths';
 import { fCurrency } from 'src/utils/format-number';
 import { varAlpha } from 'src/theme/styles';
+import { getCancellationPolicy } from 'src/utils/cancellation-policy';
 import { BookingScheduleDialogs } from '../../sessions-view/components/booking-schedule-dialogs';
 import { BusinessInfoCard } from './business-info-card';
 import ServiceCard from './service-card-main';
@@ -96,6 +97,7 @@ function StarRating({ rating }) {
 
 export const ServiceGeneralTab = memo(({ service, promotion }) => {
   const { t } = useTranslate();
+  const cancellationPolicy = getCancellationPolicy(service?.cancellationPolicy);
   const router = useRouter();
   const user = useSelector((state) => state.user);
   const userType = user?.user?.accountState?.userType ?? user?.accountState?.userType;
@@ -233,23 +235,11 @@ export const ServiceGeneralTab = memo(({ service, promotion }) => {
               <Stack spacing={1.5}>
                 {[
                   {
-                    icon: 'solar:calendar-add-bold',
-                    palette: 'info',
-                    label: t('howLateCanSomeoneBook'),
-                    value: `${service.latestBookHours ?? '—'}h ${service.latestBookMins ?? '0'}m`,
+                    icon: cancellationPolicy.value === 'non_refundable' ? 'solar:close-circle-bold' : 'solar:wallet-money-bold',
+                    palette: cancellationPolicy.value === 'non_refundable' ? 'warning' : 'success',
+                    label: t('cancellationPolicy', { defaultValue: 'Cancellation policy' }),
+                    value: t(cancellationPolicy.labelKey, { defaultValue: cancellationPolicy.label }),
                   },
-                  {
-                    icon: 'solar:close-circle-bold',
-                    palette: 'warning',
-                    label: t('howLateCanSomeoneCancel'),
-                    value: `${service.latestCancelHours ?? '—'}h ${service.latestCancelMins ?? '0'}m`,
-                  },
-                  ...(service.refundPercentage != null
-                    ? [{ icon: 'solar:wallet-money-bold', palette: 'success', label: t('refundPercentagePercent'), value: `${service.refundPercentage}%` }]
-                    : []),
-                  ...(service.refundRules
-                    ? [{ icon: 'solar:document-text-bold', palette: 'error', label: t('rulesForRefund'), value: service.refundRules }]
-                    : []),
                 ].map((item) => (
                   <Card
                     key={item.label}

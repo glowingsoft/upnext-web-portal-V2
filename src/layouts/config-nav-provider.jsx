@@ -1,6 +1,7 @@
 import { paths } from 'src/routes/paths';
 import { CONFIG } from 'src/config-global';
 import { SvgColor } from 'src/components/svg-color';
+import { Iconify } from 'src/components/iconify';
 
 const icon = (name) => <SvgColor src={`${CONFIG.site.basePath}/assets/icons/navbar/${name}.svg`} />;
 
@@ -40,12 +41,14 @@ const ICONS = {
   bookings: icon('ic-session'), // Changed session to bookings
   analytics: icon('ic-analytics-2'),
   revenue: icon('ic-revenue'),
+  liveOffers: <Iconify icon="solar:bell-bing-bold-duotone" width={24} />,
 };
 
 const getNavData = (t) => [
   {
     items: [
       { title: t('dashboard'), path: paths.dashboard.root, icon: ICONS.dashboard },
+      { title: t('liveBookingOffers'), path: paths.dashboard.liveOffers, icon: ICONS.liveOffers },
       { title: t('calendar'), path: paths.dashboard.calendar, icon: ICONS.calendar },
       { title: t('chat'), path: paths.dashboard.chat, icon: ICONS.chat },
       { title: t('services'), path: paths.dashboard.services, icon: ICONS.service },
@@ -78,6 +81,7 @@ const defaultT = (key) => {
   const translations = {
     dashboard: 'Dashboard',
     calendar: 'Calendar',
+    liveBookingOffers: 'Live Booking Offers',
     chat: 'Chat',
     services: 'Services',
     packages: 'Packages',

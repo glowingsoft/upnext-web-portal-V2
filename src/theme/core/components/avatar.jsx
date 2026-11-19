@@ -4,20 +4,6 @@ import { varAlpha } from '../../styles';
 
 const COLORS = ['primary', 'secondary', 'info', 'success', 'warning', 'error'];
 
-const colorByName = (name) => {
-  const charAt = name.charAt(0).toLowerCase();
-
-  if (['a', 'c', 'f'].includes(charAt)) return 'primary';
-  if (['e', 'd', 'h'].includes(charAt)) return 'secondary';
-  if (['i', 'k', 'l'].includes(charAt)) return 'info';
-  if (['m', 'n', 'p'].includes(charAt)) return 'success';
-  if (['q', 's', 't'].includes(charAt)) return 'warning';
-  if (['v', 'x', 'y'].includes(charAt)) return 'error';
-  return 'primary';
-};
-
-// ----------------------------------------------------------------------
-
 const avatarColors = {
   colors: COLORS.map((color) => ({
     props: ({ ownerState }) => ownerState.color === color,
@@ -48,23 +34,11 @@ const MuiAvatar = {
    *************************************** */
   styleOverrides: {
     rounded: ({ theme }) => ({ borderRadius: theme.shape.borderRadius * 1.5 }),
-    colorDefault: ({ ownerState, theme }) => {
-      const color = colorByName(`${ownerState.alt}`);
-
-      return {
-        ...(!!ownerState.alt && {
-          ...(color !== 'default'
-            ? {
-                color: theme.vars.palette[color].contrastText,
-                backgroundColor: theme.vars.palette[color].main,
-              }
-            : {
-                color: theme.vars.palette.text.secondary,
-                backgroundColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.24),
-              }),
-        }),
-      };
-    },
+    colorDefault: ({ theme }) => ({
+      fontWeight: theme.typography.fontWeightBold,
+      color: theme.vars.palette.primary.contrastText,
+      backgroundColor: theme.vars.palette.primary.main,
+    }),
   },
 };
 
